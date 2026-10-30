@@ -1,0 +1,22 @@
+[profile.default]
+src = "contracts"
+test = "test"
+script = "script"
+out = "out"
+libs = ["vendor"]
+solc_version = "0.8.37"
+optimizer = true
+evm_version = "cancun"
+remappings = [
+  "@openzeppelin/contracts/=vendor/openzeppelin-contracts/contracts/",
+  "forge-std/=vendor/forge-std/src/",
+  "solady/=vendor/solady/src/",
+]
+fs_permissions = [{ access = "read", path = "./fixtures" }]
+ignored_warnings_from = ["vendor"]
+
+[profile.default.fuzz]
+runs = 1000
+
+[fmt]
+line_length = 120
