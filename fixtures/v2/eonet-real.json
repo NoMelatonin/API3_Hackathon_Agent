@@ -1,0 +1,7 @@
+{
+  "airnode": "0x84A69892825178Fb1602fb78412E21728efee6a6",
+  "requestHash": "0x45400127cada55f95cd33e3e600b8c6f89c12961e6b66ed5a8cef01bc903a6ea",
+  "timestamp": "1793384499",
+  "data": "{\"category\":\"severeStorms\",\"eventId\":\"EONET_22386\",\"geometryType\":\"Point\",\"latitude\":27.1,\"longitude\":160.7,\"observedAt\":\"2026-08-10T06:00:00Z\",\"source\":\"JTWC\",\"unit\":\"kts\",\"windSpeed\":35.00}",
+  "signature": "0x9ca636e1606b679a5298355e9386434142d33209dd5940bd25e0e9134e5eee7744661a0476774319c6a4b269dacd9a1ebd6cab60d003bbb1d09a656c9a6b1f931c"
+}
