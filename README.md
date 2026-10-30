@@ -74,7 +74,7 @@ npm run check-real
 npm run build
 ```
 
-**Geprüft:** 17 TypeScript-Tests, 29 Solidity-Tests mit 1.000 Fuzz-Durchläufen, vier Browsertests, Produktionsbuild, echte Base-Sepolia-Auszahlungen und vier Contract-Ablehnungen. Die eingebundenen Nodary-Fixtures dienen nur den übernommenen Starter-Regressionstests, niemals als Katastrophennachweis.
+**Geprüft:** 20 TypeScript-Tests, 33 Solidity-Tests mit 1.000 Fuzz-Durchläufen, fünf Browsertests, Produktionsbuild, echte Base-Sepolia-Auszahlungen und vier Contract-Ablehnungen. Die eingebundenen Nodary-Fixtures dienen nur den übernommenen Starter-Regressionstests, niemals als Katastrophennachweis.
 
 Für die Browsertests eine **frische lokale Chain** starten (historische Uhr ausdrücklich nur für die lokale Simulation):
 
@@ -127,3 +127,5 @@ Die Airnode-Signatur belegt, was **API3 über die USGS-API** gelesen hat. USGS s
 Deadline: **31.10.2026, 15:00 Uhr MEZ**. Kein autonomer Agent; kein Agent-Bonus beansprucht. Devfolio-Einreichung, Video-Upload und gegebenenfalls Änderungen der Repository-Sichtbarkeit erfolgen separat durch den Nutzer.
 
 Die GitHub-Sichtbarkeit wurde am 30.10.2026 geprüft: Das Repository ist derzeit **privat**. Vor Abgabe muss es öffentlich sein; die Sichtbarkeit wurde nicht verändert.
+
+Projektbericht für Leser ohne Vorwissen: [Umsetzung, abgeschlossenes Review und priorisierter Ausblick](output/pdf/DisasterDAO_Projektbericht_Review_und_Ausblick.pdf).

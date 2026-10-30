@@ -25,7 +25,7 @@ Fonds: `0x8b1cad09c9be9d2e1ff38f4a490951bc1a317257`, Base Sepolia (84532).
 - Echte Oracle-Auszahlung: https://sepolia.basescan.org/tx/0x1eb9c1960f8e73779709f0021438f1b24692e671b8c7f6b322f5fcb0001accd1
 - Notfall-Auszahlung: https://sepolia.basescan.org/tx/0xce84643833c8529aa502befe4edbde47d9f599e02c3f83eb0b070074fbed3242
 - Alle vier Manipulationsfälle am deployten Contract über `eth_call` abgewiesen; Bericht im Repository unter `deployments/tamper-report.json`.
-- 17 TypeScript-, 29 Solidity- und vier Browsertests bestanden; inklusive gemischter Auszahlungspfade, Wiederholungen, Zeitgrenzen, ungültiger Daten und fehlgeschlagener Transfers.
+- 20 TypeScript-, 33 Solidity- und fünf Browsertests bestanden; inklusive gemischter Auszahlungspfade, Wiederholungen, Zeitgrenzen, ungültiger Daten und fehlgeschlagener Transfers.
 
 ## Vertrauensmodell und Grenzen
 
