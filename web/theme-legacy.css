@@ -1,0 +1,54 @@
+@import url('./theme.css');
+[data-theme='dark'] body {
+  background: var(--bg);
+  color: var(--text);
+}
+[data-theme='dark']
+  :is(
+    header,
+    footer,
+    section,
+    article,
+    aside,
+    dialog,
+    .card,
+    .panel,
+    .modal,
+    .payment-list,
+    .warning
+  ) {
+  background-color: var(--surface);
+  color: var(--text);
+  border-color: var(--line);
+}
+[data-theme='dark'] :is(input, select, textarea, button) {
+  background-color: var(--surface);
+  color: var(--text);
+  border-color: var(--line);
+}
+[data-theme='dark'] :is(p, small, label, summary) {
+  color: inherit;
+}
+.legacy-theme {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 8px 20px;
+  background: var(--surface);
+  color: var(--text);
+  font: 12px system-ui;
+  border-bottom: 1px solid var(--line);
+}
+.legacy-theme label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.legacy-theme select {
+  padding: 4px;
+  width: auto;
+}
+.legacy-theme a {
+  color: inherit;
+}
