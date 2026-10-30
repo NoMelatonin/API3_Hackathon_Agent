@@ -13,3 +13,5 @@ public/deployment.local.json
 playwright-report/
 test-results/
 demo/videos/
+
+public/deployment.v2.local.json

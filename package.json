@@ -29,7 +29,9 @@
     "forge": "forge",
     "anvil": "anvil",
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && tsc -p tsconfig.web.json && vite build"
+    "build": "tsc --noEmit && tsc -p tsconfig.web.json && vite build",
+    "v2": "node src/v2.ts",
+    "fetch-campaign": "node --env-file-if-exists=.env src/fetch-campaign.ts"
   },
   "dependencies": {
     "@x402/evm": "^2.28.0",
