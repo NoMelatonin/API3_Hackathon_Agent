@@ -1,21 +1,18 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { isHex, type Hex } from 'viem';
+import { readPrivateKey } from './private-key.ts';
 import { AIRNODE_SIGNER, AIRNODE_URL, OTHER_REQUEST, REQUEST, REQUEST_HASH } from './usgs.ts';
 import { deriveRequestHash, fetchSignedResponse, verifySignedResponse } from './vendor/airnode-v2.ts';
 import { createPayingFetch, readPaymentSettlement } from './vendor/x402.ts';
 
-const key = process.env.PAYER_PRIVATE_KEY;
-if (!key || !isHex(key) || key.length !== 66) {
-  throw new Error('Set PAYER_PRIVATE_KEY locally in .env to a dedicated testwallet holding Base Sepolia aUSD.');
-}
+const key = readPrivateKey(process.env.PAYER_PRIVATE_KEY);
 const other = process.argv.includes('--other');
 const request = other ? OTHER_REQUEST : REQUEST;
 const fileIndex = process.argv.indexOf('--out');
 const output = process.argv[fileIndex + 1];
 if (fileIndex !== -1 && (!output || output.startsWith('--'))) throw new Error('--out requires a path');
 const filename = fileIndex !== -1 ? output! : `fixtures/usgs-${other ? 'other' : 'real'}.json`;
-const paidFetch = createPayingFetch(key as Hex);
+const paidFetch = createPayingFetch(key);
 const fetchWithReceipt: typeof fetch = async (input, init) => {
   const response = await paidFetch(input, { ...init, signal: AbortSignal.timeout(60_000) });
   const settlement = readPaymentSettlement(response);

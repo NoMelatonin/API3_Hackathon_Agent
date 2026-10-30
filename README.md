@@ -2,10 +2,12 @@
 
 NGO-Katastrophenfonds für den TUM Blockchain & AI Hackathon, API3-Track.
 
-**Stand: Meilenstein 1 – Datenweg vorbereitet; echter Ereignisnachweis noch offen.**
-Es gibt noch keinen Fonds, keine Auszahlung und kein Deployment. Der nächste Schritt
-ist der echte bezahlte USGS-Abruf und `npm run check-real`. Erst wenn dieser Check
-erfolgreich ist, folgen Fonds, Notfallquorum, Oberfläche und Testnet-Demo.
+**Stand: Meilenstein 2 – echter Datenweg nachgewiesen.**
+Die echte USGS-Antwort wurde am 30.10.2026 bezahlt abgerufen, in TypeScript und
+Solidity authentifiziert und in Solidity ausgewertet (`npm run check-real`: PASS).
+Es gibt noch keinen Fonds, keine Auszahlung und kein Deployment. Diese folgen jetzt.
+
+x402-Testzahlung: [Base Sepolia](https://sepolia.basescan.org/tx/0x92220d445264ec16d66b018c762c327b067591ebdbd5f04f0ee5cb3fbf6639bc).
 
 ## Lokal starten
 
@@ -17,7 +19,7 @@ cp .env.example .env
 ```
 
 In `.env` ausschließlich den Schlüssel einer separaten **Testwallet** als
-`PAYER_PRIVATE_KEY=0x…` hinterlegen. Keine Schlüssel im Chat oder Repository.
+`PAYER_PRIVATE_KEY=0x…` hinterlegen (Hex-Export auch ohne `0x` möglich). Keine Schlüssel im Chat oder Repository.
 Die Wallet benötigt API3-aUSD auf Base Sepolia; die API verlangt 0,01 aUSD pro Abruf.
 Minting benötigt Base-Sepolia-ETH, die vermittelte x402-Zahlung selbst nicht.
 [aUSD-Faucet](https://airnodehub.api3.org/faucet).
