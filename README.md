@@ -2,10 +2,14 @@
 
 NGO-Katastrophenfonds für den TUM Blockchain & AI Hackathon, API3-Track.
 
-**Stand: Meilenstein 2 – echter Datenweg nachgewiesen.**
+**Stand: Meilenstein 3 – Datenweg und Fonds lokal geprüft.**
 Die echte USGS-Antwort wurde am 30.10.2026 bezahlt abgerufen, in TypeScript und
 Solidity authentifiziert und in Solidity ausgewertet (`npm run check-real`: PASS).
-Es gibt noch keinen Fonds, keine Auszahlung und kein Deployment. Diese folgen jetzt.
+Der Fonds mit gemeinsamem Einmalanspruch für Oracle- und 2/3-Notfallpfad ist
+implementiert. 29 Solidity-Tests bestehen, einschließlich echter USGS-Auszahlung
+und aller vier Manipulationsfälle; Zeitabläufe werden dabei lokal simuliert.
+Testnet-Deployment und Oberfläche folgen. Für das Deployment benötigt die
+Projektwallet zusätzlich Base-Sepolia-ETH.
 
 x402-Testzahlung: [Base Sepolia](https://sepolia.basescan.org/tx/0x92220d445264ec16d66b018c762c327b067591ebdbd5f04f0ee5cb3fbf6639bc).
 
@@ -72,6 +76,32 @@ serialisiert. Der Vertrag vertraut festgelegtem Signer und Anfragehash, nicht de
 Metadaten eines Einreichers. Die Signatur belegt, was der API3-Airnode gelesen hat;
 sie beweist weder Schadenshöhe noch Bedürftigkeit oder Verwendung von Hilfsgeldern.
 Die Demo verwendet ein historisches Ereignis und später ausschließlich Testmittel.
+
+## Fondsregeln
+
+Ein Einsatz, drei feste NGO-Wallets, je 1.000 dUSD, Gesamtbudget 3.000 dUSD.
+`DemoUSD` hat sechs Dezimalstellen und eine feste, wertlose Testmenge von 3.000.
+Vor Aktivierung muss der gesamte Fonds finanziert sein. Jeder darf einzahlen und
+den finanzierten Fonds aktivieren; es gibt keinen Administrator oder Regelwechsel.
+
+`claim(ngo, timestamp, data, signature)` verifiziert den bei Deployment festgelegten
+Airnode und Anfragehash. Eine höchstens fünf Minuten alte, nicht zukünftige und
+nicht vor Aktivierung signierte Antwort muss das feste Ereignis, `reviewed`,
+`earthquake`, Magnitude ≥ 7,0, den 06.02.2023 UTC und 36–39° N / 35–39° E enthalten.
+Der Relayer erhält nichts; die Zahlung geht immer an die konfigurierte NGO.
+
+Bei Datenproblemen genehmigen zwei unterschiedliche Verantwortliche denselben
+Empfänger und Begründungshash über `approveEmergency(ngo, reasonHash)`.
+`executeEmergency(ngo, reasonHash)` ersetzt dann den Oracle-Trigger.
+Die drei Verantwortlichen sind von allen NGO-Adressen getrennt. Beide Pfade
+verbrauchen denselben einmaligen 1.000-dUSD-Anspruch; es gibt keine Folgetranche.
+Eine normale Zahlung nach einer Notfallzahlung und der umgekehrte Fall scheitern.
+
+Es gibt absichtlich keinen Abzug überschüssiger Einzahlungen und keine Rückzahlung.
+Keine echten Mittel einzahlen. Ein einzelner Demo-Rechner mit sechs Testwallets
+stellt keine organisatorisch unabhängige Governance dar. Der on-chain Notfallpfad
+hilft nicht bei einem Chain-Ausfall oder unerreichbarem Quorum. Nachprüfung ist eine
+Prozesspflicht der Demo-Erzählung, keine implementierte externe Prüfung.
 
 ## Herkunft
 
