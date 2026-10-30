@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Test} from "forge-std/Test.sol";
 import {DisasterFundV2 as Fund} from "../contracts/DisasterFundV2.sol";
 import {DemoUSDV2} from "../contracts/DemoUSDV2.sol";
@@ -162,6 +163,35 @@ contract DisasterFundV2Test is Test {
         c[0].cap=c[0].threshold;
         vm.expectRevert(Fund.InvalidConfiguration.selector); new Fund(token,c,ngos,committee);
     }
+    function testIntegerAndCoordinatePrecisionCannotBypassIdentity() public {
+        reject(2,vm.replace(HEALTH,"2022","2022.1"),StrictJson.AmbiguousData.selector);
+        reject(2,vm.replace(HEALTH,'"count":1','"count":1.5'),StrictJson.AmbiguousData.selector);
+        reject(1,vm.replace(WIND,"160.7","162.0000001"),StrictJson.AmbiguousData.selector);
+        reject(0,vm.replace(QUAKE,"1675646254342","1675646254342.1"),StrictJson.AmbiguousData.selector);
+    }
+    function testTransferFailureRollsBackAndCallbackCannotReenter() public {
+        V2CallbackToken malicious = new V2CallbackToken();
+        Fund f = new Fund(malicious,configs(vm.addr(KEY)),ngos,committee);
+        malicious.mint(address(f),18000e6); f.activate();
+        bytes32 reason=keccak256("test");
+        for(uint256 n;n<2;++n)for(uint256 i;i<2;++i){vm.prank(committee[i]);f.approveEmergency(0,ngos[n],reason);}
+        malicious.configure(f,ngos[1],reason,true);
+        vm.expectRevert();f.executeEmergency(0,ngos[0],reason);
+        assertFalse(f.claimed(0,ngos[0]));assertEq(f.totalPaid(),0);assertEq(f.payoutCount(),0);
+        malicious.configure(f,ngos[1],reason,false);
+        f.executeEmergency(0,ngos[0],reason);
+        assertTrue(malicious.blocked());assertFalse(f.claimed(0,ngos[1]));assertEq(f.totalPaid(),1000e6);
+    }
+    function testRealUsGSResponsePaysAdaptiveAmount() public {
+        string memory json=vm.readFile("fixtures/usgs-real.json");
+        uint256 time=vm.parseUint(vm.parseJsonString(json,".timestamp"));vm.warp(time);
+        Fund.Campaign[3] memory c=configs(vm.addr(KEY));
+        c[0].airnode=0x5aF744115e2577513D878D4263Db73b3E77E7630;
+        c[0].requestHash=0x226b958e9cea51240281d38535b7a0661ed95b7a21f978a122bf442ca7b8522c;
+        Fund f=new Fund(token,c,ngos,committee);deal(address(token),address(f),18000e6);f.activate();
+        f.claim(0,ngos[0],time,bytes(vm.parseJsonString(json,".data")),vm.parseJsonBytes(json,".signature"));
+        assertApproxEqAbs(f.totalPaid(),1227347430,1);
+    }
     function testRealEonetResponseAcceptedAndTamperRejected() public {
         string memory json = vm.readFile("fixtures/v2/eonet-real.json");
         uint256 timestamp = vm.parseUint(vm.parseJsonString(json,".timestamp"));
@@ -177,5 +207,17 @@ contract DisasterFundV2Test is Test {
         assertEq(f.campaignPaid(1),535204081);
         vm.expectPartialRevert(AirnodeV2Attestation.NotSignedByAirnode.selector);
         f.claim(1,ngos[1],timestamp,bytes(vm.replace(string(data),"35.00","64.00")),sig);
+    }
+}
+
+contract V2CallbackToken is ERC20 {
+    Fund target;address recipient;bytes32 reason;bool fail;bool public blocked;
+    constructor() ERC20("Callback test","TEST"){}
+    function mint(address to,uint256 amount) external {_mint(to,amount);}
+    function configure(Fund f,address n,bytes32 r,bool fail_) external {target=f;recipient=n;reason=r;fail=fail_;}
+    function transfer(address to,uint256 amount) public override returns(bool){
+        if(fail)return false;
+        try target.executeEmergency(0,recipient,reason){blocked=false;}catch{blocked=true;}
+        return super.transfer(to,amount);
     }
 }

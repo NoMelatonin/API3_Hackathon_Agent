@@ -9,8 +9,8 @@ import {PayoutMath} from "./PayoutMath.sol";
 import {StrictJson} from "./StrictJson.sol";
 import {ProjectedJson} from "./vendor/ProjectedJson.sol";
 
-/// @notice One immutable historical relief exercise. No admin, upgrades or withdrawal path.
-/// @dev Intended ONLY for testnet use with DemoUSD. API3 signs what USGS returned, not humanitarian need.
+/// @notice Three immutable historical campaigns sharing a fully reserved demo pool. No admin or upgrades.
+/// @dev Intended ONLY for valueless demo tokens. Airnodes authenticate source data, not humanitarian need.
 contract DisasterFundV2 is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -138,7 +138,7 @@ contract DisasterFundV2 is ReentrancyGuard {
         if (id == 0) {
             if (!_eq(data, "eventId", "us6000jllz") || !_eq(data, "eventType", "earthquake")) revert WrongEvent();
             if (!_eq(data, "status", "reviewed")) revert TriggerNotMet();
-            uint256 time = ProjectedJson.readUint(data, "eventTime", 0);
+            uint256 time = StrictJson.integer(data, "eventTime");
             if (time < 1675641600000 || time >= 1675728000000) revert ObservationOutsideWindow();
             _region(data, 36e6, 39e6, 35e6, 39e6);
             return StrictJson.number(data, "magnitude");
@@ -151,8 +151,8 @@ contract DisasterFundV2 is ReentrancyGuard {
             return StrictJson.number(data, "windSpeed");
         }
         if (!_eq(data, "indicator", "MALARIA_EST_INCIDENCE") || !_eq(data, "country", "NGA")
-            || !_eq(data, "spatialType", "COUNTRY") || StrictJson.number(data, "year") != 2022e6
-            || StrictJson.number(data, "count") != 1e6 || ProjectedJson.readUint(data, "recordId", 0) == 0
+            || !_eq(data, "spatialType", "COUNTRY") || StrictJson.integer(data, "year") != 2022
+            || StrictJson.integer(data, "count") != 1 || StrictJson.integer(data, "recordId") == 0
             || !ProjectedJson.isNull(data, "dim1") || !ProjectedJson.isNull(data, "dim2") || !ProjectedJson.isNull(data, "dim3")) revert WrongEvent();
         uint256 incidence = StrictJson.number(data, "incidence");
         bool lowNull = ProjectedJson.isNull(data, "low");
@@ -163,8 +163,8 @@ contract DisasterFundV2 is ReentrancyGuard {
     }
 
     function _region(bytes memory data, int256 south, int256 north, int256 west, int256 east) private pure {
-        int256 lat = ProjectedJson.readInt(data, "latitude", 6);
-        int256 lon = ProjectedJson.readInt(data, "longitude", 6);
+        int256 lat = StrictJson.signedNumber(data, "latitude");
+        int256 lon = StrictJson.signedNumber(data, "longitude");
         if (lat < south || lat > north || lon < west || lon > east) revert OutsideRegion();
     }
 

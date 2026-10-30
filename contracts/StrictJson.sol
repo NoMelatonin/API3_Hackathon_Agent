@@ -23,7 +23,7 @@ library StrictJson {
     }
 
     /// @dev Reject precision loss instead of rounding an invalid or just-below-threshold input upward.
-    function number(bytes memory data, string memory key) internal pure returns (uint256) {
+    function _precision(bytes memory data, string memory key) private pure {
         JSONParserLib.Item memory item = JSONParserLib.parse(string(data)).at(string.concat('"', key, '"'));
         string memory raw = item.isString() ? JSONParserLib.decodeString(item.value()) : item.value();
         bytes memory value = bytes(raw);
@@ -33,6 +33,21 @@ library StrictJson {
             if (value[i] == '.') fraction = true;
             else if (fraction && ++decimals > 6) revert AmbiguousData();
         }
+    }
+
+    function number(bytes memory data, string memory key) internal pure returns (uint256) {
+        _precision(data, key);
         return ProjectedJson.readUint(data, key, 6);
+    }
+
+    function integer(bytes memory data, string memory key) internal pure returns (uint256) {
+        uint256 scaled = number(data, key);
+        if (scaled % 1e6 != 0) revert AmbiguousData();
+        return scaled / 1e6;
+    }
+
+    function signedNumber(bytes memory data, string memory key) internal pure returns (int256) {
+        _precision(data, key);
+        return ProjectedJson.readInt(data, key, 6);
     }
 }
