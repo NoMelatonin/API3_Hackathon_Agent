@@ -1,0 +1,12 @@
+{
+  "version": "v3.1",
+  "empiricalReadiness": "blocked",
+  "reason": "No licensed, independently documented and comparable global NGO 30-day actual-expenditure corpus established. No automatic empirical maximum is enabled.",
+  "realEvidence": [
+    {"path": "fixtures/usgs-fresh.json", "purpose": "unchanged authentic historical USGS Airnode response; not cost evidence"},
+    {"path": "fixtures/v2/eonet-real.json", "purpose": "unchanged authentic historical EONET Airnode response; not cost evidence"}
+  ],
+  "syntheticCorpus": "src/v3/model.ts: syntheticCases — fictitious amounts and populations, executable model validation only",
+  "requiredFields": ["independentEventId", "area", "hazard", "service", "periodStart", "periodDays=30", "reachableAffectedPeople", "budgetKind", "currency", "priceDate", "documentedAmount", "license", "source", "accessibility", "density", "infrastructure", "intensity", "regionalPriceIndex"],
+  "excluded": ["reconstruction costs", "economic damage", "unattributed pledges", "population exposure treated as actual affected people", "annual incidence treated as acute outbreak"]
+}
