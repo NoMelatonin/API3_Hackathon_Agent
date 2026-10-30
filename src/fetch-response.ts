@@ -1,5 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { writeNewOutput } from './new-output.ts';
 import { readPrivateKey } from './private-key.ts';
 import { AIRNODE_SIGNER, AIRNODE_URL, OTHER_REQUEST, REQUEST, REQUEST_HASH } from './usgs.ts';
 import { deriveRequestHash, fetchSignedResponse, verifySignedResponse } from './vendor/airnode-v2.ts';
@@ -19,11 +18,12 @@ const fetchWithReceipt: typeof fetch = async (input, init) => {
   if (settlement) console.error('x402 settlement:', JSON.stringify(settlement));
   return response;
 };
-const response = await fetchSignedResponse(AIRNODE_URL, request, fetchWithReceipt);
-await verifySignedResponse(response, AIRNODE_SIGNER, other ? deriveRequestHash(request) : REQUEST_HASH);
-// Preserve response.data exactly as signed; JSON wrapping does not change its bytes.
-await mkdir(resolve(filename, '..'), { recursive: true });
-await writeFile(filename, JSON.stringify(response, null, 2) + '\n', { flag: 'wx' });
+await writeNewOutput(filename, async () => {
+  const response = await fetchSignedResponse(AIRNODE_URL, request, fetchWithReceipt);
+  await verifySignedResponse(response, AIRNODE_SIGNER, other ? deriveRequestHash(request) : REQUEST_HASH);
+  console.log(`Signed at ${new Date(Number(response.timestamp) * 1000).toISOString()}`);
+  console.log('Historical observation:', JSON.parse(response.data));
+  // Preserve response.data exactly as signed; JSON wrapping does not change its bytes.
+  return JSON.stringify(response, null, 2) + '\n';
+});
 console.log(`Saved verified real Airnode response to ${filename}`);
-console.log(`Signed at ${new Date(Number(response.timestamp) * 1000).toISOString()}`);
-console.log('Historical observation:', JSON.parse(response.data));
