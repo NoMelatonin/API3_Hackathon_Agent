@@ -1,5 +1,17 @@
 # DisasterDAO
 
+## V2: adaptive Auszahlungen und drei Einsätze
+
+Der Arbeitsbranch `feat/disasterdao-multi-source` ergänzt einen **neuen lokalen Fonds** mit exponentieller Erdbeben-, quadratischer Sturm- und linearer Gesundheits-Förderkurve. Pro NGO und Einsatz einmalig 500–2.000 dUSD; drei reservierte Einsatzbudgets ergeben 18.000 dUSD. V1-Contract, Testnet-Deployment und ursprüngliche Nachweise bleiben erhalten.
+
+`npm run dev` öffnet die neue Vorschau. Lokale V2: **http://127.0.0.1:5173/?local=1**. Den bisherigen MVP erreicht man mit **http://127.0.0.1:5173/?legacy=1**, lokal zusätzlich `&local=1`.
+
+**Echt belegt:** USGS und NASA EONET mit unveränderten Airnode-Signaturen sowie lokalen Contract-Auszahlungen. **WHO blockiert:** Airnode HTTP 502 wegen Upstream HTTP 500; im Standardfonds keine WHO-Oracle-Auszahlung. Die WHO-Kurve wird ausschließlich synthetisch getestet.
+
+[V2 starten, Formeln, Parameter und Prüfgrenzen](docs/V2.md) · [Quellenstatus](docs/sources/STATUS.md).
+
+Die folgenden Abschnitte dokumentieren den erhaltenen **V1-MVP mit festen 1.000-dUSD-Zahlungen**. Seine lokalen Browseraufrufe benötigen jetzt `&legacy=1`; die V1-Skripte sind unverändert.
+
 Gemeinsamer NGO-Katastrophenfonds mit signierter Soforthilfe und einem begrenzten 2/3-Notfallpfad. Hackathon-Prototyp mit **fiktiven NGOs, historischen Ereignisdaten und wertlosen Testmitteln**.
 
 ## Laufender Prototyp

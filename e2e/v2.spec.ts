@@ -12,7 +12,10 @@ async function rpc(method:string,params:unknown[]=[]) {
 let snapshot:string;
 test.beforeEach(async({page})=>{
   snapshot=await rpc('evm_snapshot');
-  await rpc('evm_setNextBlockTimestamp',[Number(usgs.timestamp)]);await rpc('evm_mine');
+  const latest=await rpc('eth_getBlockByNumber',['latest',false]);
+  const time=Math.max(Number(usgs.timestamp),Number(BigInt(latest.timestamp))+1);
+  if(time>Number(usgs.timestamp)+250)throw new Error('Fresh historical local chain required for V2 fixtures');
+  await rpc('evm_setNextBlockTimestamp',[time]);await rpc('evm_mine');
   await page.addInitScript(({account})=>{
     (window as any).__testAccount=account;
     (window as any).ethereum={request:async({method,params}:any)=>{

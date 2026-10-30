@@ -1,5 +1,5 @@
 import { access, mkdir, readFile } from 'node:fs/promises';
-import { encodeDeployData, walletActions, formatUnits, keccak256, toHex, type Address } from 'viem';
+import { encodeDeployData, walletActions, testActions, formatUnits, keccak256, toHex, type Address } from 'viem';
 import { artifact, assertChain, confirmed, local, ngoIndex, option, publicClient, wallet } from './deployment.ts';
 import { campaignConfig } from './v2-config.ts';
 import { campaigns, TOTAL_BUDGET } from './campaigns.ts';
@@ -69,6 +69,17 @@ if (command === 'deploy') {
     const balance = await publicClient.readContract({address:config.token,abi:tokenArtifact.abi,functionName:'balanceOf',args:[config.fund]}) as bigint;
     if(balance+total!==TOTAL_BUDGET) throw new Error('Funding invariant failed');
     console.log('PASS: token and fund runtime incl. immutable rules match; activated; 18,000-dUSD accounting consistent.');
+  } else if(command==='clock') {
+    const file=option('--file'); if(!file) throw new Error('--file required');
+    const response=JSON.parse(await readFile(file,'utf8')) as SignedResponse;
+    // Only authentic source fixtures may choose the historical local clock.
+    await verifySignedResponse(response,campaigns[id]!.signer,campaignConfig[id]!.requestHash);
+    const timestamp=BigInt(response.timestamp);
+    const latest=await publicClient.getBlock();
+    if(timestamp<(await read('activatedAt') as bigint) || timestamp<=latest.timestamp) throw new Error('Fixture predates activation or current local clock; start a fresh isolated chain.');
+    const testClient=publicClient.extend(testActions({mode:'anvil'}));
+    await testClient.setNextBlockTimestamp({timestamp});await testClient.mine({blocks:1});
+    console.log('Historical LOCAL clock set. Signed timestamp unchanged; no public-chain action.');
   } else if(command==='submit' || command==='quote') {
     const file = option('--file'); if(!file) throw new Error('--file required');
     const response = JSON.parse(await readFile(file,'utf8')) as SignedResponse;
@@ -89,5 +100,5 @@ if (command === 'deploy') {
       await confirmed(tx);
     }
     await confirmed(await client.writeContract({address:config.fund,abi:fundArtifact.abi,functionName:'executeEmergency',args:[id,ngo,reason]}));
-  } else throw new Error('Use deploy, verify, quote, submit or emergency');
+  } else throw new Error('Use deploy, verify, clock, quote, submit or emergency');
 }
