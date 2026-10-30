@@ -24,18 +24,23 @@
     "export-abi": "node src/export-abi.ts",
     "test:ui": "playwright test",
     "record-demo": "node demo/record.mjs",
-    "test": "node --test src/vendor/*.test.ts src/*.test.ts",
+    "test": "node --test src/vendor/*.test.ts src/*.test.ts src/v3/*.test.ts server/*.test.ts",
     "typecheck": "tsc --noEmit",
     "forge": "forge",
     "anvil": "anvil",
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && tsc -p tsconfig.web.json && vite build",
     "v2": "node src/v2.ts",
-    "fetch-campaign": "node --env-file-if-exists=.env src/fetch-campaign.ts"
+    "fetch-campaign": "node --env-file-if-exists=.env src/fetch-campaign.ts",
+    "test:core": "node --test src/v3/*.test.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/s3-request-presigner": "^3.1161.0",
     "@x402/evm": "^2.28.0",
     "@x402/fetch": "^2.28.0",
+    "fastify": "^5.12.7",
+    "pg": "^8.23.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "viem": "^2.57.3"
@@ -45,6 +50,7 @@
     "@foundry-rs/forge": "1.7.1",
     "@playwright/test": "^1.64.1",
     "@types/node": "^24.19.1",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "pnpm": "11.28.9",
