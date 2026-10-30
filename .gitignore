@@ -15,3 +15,6 @@ test-results/
 demo/videos/
 
 public/deployment.v2.local.json
+
+# Isolated V3 private local state
+.runtime/

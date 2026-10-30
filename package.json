@@ -32,7 +32,14 @@
     "build": "tsc --noEmit && tsc -p tsconfig.web.json && vite build",
     "v2": "node src/v2.ts",
     "fetch-campaign": "node --env-file-if-exists=.env src/fetch-campaign.ts",
-    "test:core": "node --test src/v3/*.test.ts"
+    "test:core": "node --test src/v3/*.test.ts",
+    "v3:infra": "docker compose -f compose.v3.yaml up -d --wait",
+    "v3:deploy": "node src/v3/deploy.ts",
+    "v3:server": "node --watch server/main.ts",
+    "v3:worker": "node server/run-worker.ts",
+    "v3:integration": "V3_INTEGRATION=1 node --test --test-concurrency=1 server/*.test.ts",
+    "v3:start": "node src/v3/start.ts",
+    "v3:test:ui": "playwright test --config playwright.v3.config.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1161.0",
