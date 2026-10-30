@@ -141,6 +141,53 @@ contract DisasterFundTest is Test {
         fund.claim(ngos[0], timestamp, bytes(GOOD), sig);
     }
 
+    function testChangingTimestampCannotRefreshAnOldSignature() public {
+        uint256 timestamp = block.timestamp;
+        bytes memory sig = _sign(REQUEST, timestamp, bytes(GOOD), SIGNER_KEY);
+        vm.warp(timestamp + 301);
+        vm.expectPartialRevert(AirnodeV2Attestation.NotSignedByAirnode.selector);
+        fund.claim(ngos[0], block.timestamp, bytes(GOOD), sig);
+        assertFalse(fund.claimed(ngos[0]));
+        assertEq(fund.totalPaid(), 0);
+    }
+
+    function testMalformedAndMalleableSignaturesCannotPay() public {
+        vm.expectRevert(); fund.claim(ngos[0], block.timestamp, bytes(GOOD), hex"01");
+        bytes32 digest = keccak256(abi.encodePacked(
+            "\x19Ethereum Signed Message:\n32", keccak256(abi.encodePacked(REQUEST, block.timestamp, bytes(GOOD)))
+        ));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_KEY, digest);
+        uint256 order = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141;
+        bytes memory malleated = abi.encodePacked(r, bytes32(order - uint256(s)), v == 27 ? uint8(28) : uint8(27));
+        vm.expectRevert(); fund.claim(ngos[0], block.timestamp, bytes(GOOD), malleated);
+        assertFalse(fund.claimed(ngos[0]));
+        assertEq(fund.totalPaid(), 0);
+    }
+
+    function testAllCommitteePairsCanApproveButSingleBitsCannot() public {
+        for (uint256 i; i < 3; ++i) {
+            vm.prank(committee[i]); fund.approveEmergency(ngos[i], REASON);
+            vm.expectRevert(DisasterFund.QuorumNotMet.selector); fund.executeEmergency(ngos[i], REASON);
+            vm.prank(committee[(i + 1) % 3]); fund.approveEmergency(ngos[i], REASON);
+            fund.executeEmergency(ngos[i], REASON);
+        }
+        assertEq(fund.totalPaid(), fund.TOTAL_BUDGET());
+    }
+
+    function testTokenCallbackCannotReenterAnotherApprovedClaim() public {
+        ReentrantToken malicious = new ReentrantToken();
+        DisasterFund f = new DisasterFund(malicious, REAL_SIGNER, REQUEST, ngos, committee);
+        malicious.mint(address(f), f.TOTAL_BUDGET()); f.activate();
+        _approve(f, ngos[0], REASON); _approve(f, ngos[1], REASON);
+        malicious.configure(f, ngos[1], REASON);
+        f.executeEmergency(ngos[0], REASON);
+        assertTrue(malicious.callbackBlocked());
+        assertTrue(f.claimed(ngos[0])); assertFalse(f.claimed(ngos[1]));
+        assertEq(f.totalPaid(), f.GRANT());
+        assertEq(malicious.balanceOf(ngos[0]), f.GRANT());
+        assertEq(malicious.balanceOf(ngos[1]), 0);
+    }
+
     function testEmergencyRequiresTwoDistinctApproversSameReasonAndNgo() public {
         vm.prank(committee[0]); fund.approveEmergency(ngos[0], REASON);
         vm.prank(committee[0]); vm.expectRevert(DisasterFund.AlreadyApproved.selector);
@@ -259,4 +306,25 @@ contract FailingToken is ERC20 {
     constructor() ERC20("Failing", "FAIL") {}
     function mint(address to, uint256 amount) external { _mint(to, amount); }
     function transfer(address, uint256) public pure override returns (bool) { return false; }
+}
+
+contract ReentrantToken is ERC20 {
+    DisasterFund private target;
+    address private recipient;
+    bytes32 private reason;
+    bool private attempted;
+    bool public callbackBlocked;
+    constructor() ERC20("Reentrant", "REENTER") {}
+    function mint(address to, uint256 amount) external { _mint(to, amount); }
+    function configure(DisasterFund fund_, address ngo_, bytes32 reason_) external {
+        target = fund_; recipient = ngo_; reason = reason_;
+    }
+    function transfer(address to, uint256 amount) public override returns (bool) {
+        if (!attempted) {
+            attempted = true;
+            try target.executeEmergency(recipient, reason) { callbackBlocked = false; }
+            catch { callbackBlocked = true; }
+        }
+        return super.transfer(to, amount);
+    }
 }
