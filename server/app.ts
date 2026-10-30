@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import { situation } from '../src/v3/domain.ts';
 import { reviewTarget } from '../src/v3/deadlines.ts';
 import {
   randomBytes,
@@ -157,6 +158,7 @@ export async function buildApp(
       c = await chain();
     const balance = await c.balance(),
       reserved = (await c.read('totalReserved')) as bigint;
+    const time = await now();
     return {
       simulation: true,
       alliance: s.alliance,
@@ -164,6 +166,10 @@ export async function buildApp(
       organizations: s.roles
         .filter((x) => x.kind === 'ngo')
         .map(({ id, name, ngo }) => ({ id, name, wallet: ngo })),
+      areaStates: s.areas.map((a) => ({
+        id: a.id,
+        state: situation(a, s.coverage, time),
+      })),
       areas: s.areas,
       packages: s.packages,
       incidents: s.incidents,

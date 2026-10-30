@@ -22,3 +22,6 @@ Sensitive synthetic originals remain encrypted off-chain in private storage; onl
 - P6: build, regression, integration and browser acceptance; record exact remaining verification gaps.
 
 Source documentation consulted during implementation: [Fastify validation](https://fastify.dev/docs/latest/Reference/Validation-and-Serialization/), [S3 signed access](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html), [USGS](https://earthquake.usgs.gov/fdsnws/event/1/), [EONET](https://eonet.gsfc.nasa.gov/docs/v3). Public source availability is not assumed to imply a working signed adapter.
+
+## Delivered local implementation
+P0–P6 are implemented and verified for the explicitly simulated local scope. See [LOCAL.md](LOCAL.md) for operating instructions and [VERIFICATION.md](VERIFICATION.md) for executed checks and material gaps. P1 established provenance/coverage mechanics and explicitly did **not** establish a real comparable expenditure corpus. The country/language catalogs have 51 countries and 39 languages (69 UI keys); only DE/EN are maintained source texts. PostgreSQL uses a locked JSONB aggregate with separate audit/log tables for the fixed local registry. Private storage is S3-compatible RustFS (pinned image), encrypted before upload. No production-readiness or external-source integration is inferred from local acceptance.

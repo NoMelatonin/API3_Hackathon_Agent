@@ -5,7 +5,15 @@ import { tick } from './worker.ts';
 const db = new Database<State>();
 await db.init(seed());
 const docs = new Documents(await localSecret('documents'));
-await docs.init();
+for (let attempt = 0; ; attempt++) {
+  try {
+    await docs.init();
+    break;
+  } catch (error) {
+    if (attempt >= 29) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+}
 const app = await buildApp(db, docs, await localSecret('sessions'));
 await app.listen({ host: '127.0.0.1', port: 3007 });
 console.log(

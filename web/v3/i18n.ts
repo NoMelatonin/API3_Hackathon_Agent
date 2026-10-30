@@ -66,6 +66,9 @@ export const keys = [
   'estimated',
   'pending',
   'recuse',
+  'signals',
+  'clear',
+  'conflicting',
 ] as const;
 export type Key = (typeof keys)[number];
 const rows: Record<string, string> = {
@@ -236,6 +239,49 @@ const recusalTranslations = {
   ta: 'நலன் முரண்பாட்டை அறிவி',
 };
 for (const [language, text] of Object.entries(recusalTranslations))
+  rows[language] += '|' + text;
+const situationTranslations = {
+  bg: 'Признаци|Няма признаци в проверения обхват|Противоречиви данни',
+  da: 'Tegn|Ingen tegn i kontrolleret dækning|Modstridende data',
+  de: 'Anzeichen|Keine Anzeichen in geprüfter Abdeckung|Widersprüchliche Daten',
+  en: 'Signals|No signals within reviewed coverage|Conflicting data',
+  et: 'Märgid|Kontrollitud ulatuses märke pole|Vastuolulised andmed',
+  fi: 'Merkkejä|Ei merkkejä tarkastetulla alueella|Ristiriitaiset tiedot',
+  fr: 'Signes|Aucun signe dans la couverture examinée|Données contradictoires',
+  el: 'Ενδείξεις|Καμία ένδειξη στην ελεγμένη κάλυψη|Αντικρουόμενα δεδομένα',
+  ga: 'Comharthaí|Gan chomhartha sa chlúdach scrúdaithe|Sonraí contrártha',
+  it: 'Segnali|Nessun segnale nella copertura verificata|Dati contraddittori',
+  hr: 'Znakovi|Nema znakova u provjerenom obuhvatu|Proturječni podaci',
+  lv: 'Pazīmes|Nav pazīmju pārbaudītajā tvērumā|Pretrunīgi dati',
+  lt: 'Požymiai|Patikrintoje aprėptyje požymių nėra|Prieštaringi duomenys',
+  mt: 'Sinjali|Ebda sinjal fil-kopertura eżaminata|Data kontradittorja',
+  nl: 'Signalen|Geen signalen binnen gecontroleerde dekking|Tegenstrijdige gegevens',
+  pl: 'Oznaki|Brak oznak w sprawdzonym zakresie|Sprzeczne dane',
+  pt: 'Sinais|Sem sinais na cobertura verificada|Dados contraditórios',
+  ro: 'Semne|Fără semne în acoperirea verificată|Date contradictorii',
+  sv: 'Tecken|Inga tecken inom granskad täckning|Motstridiga data',
+  sk: 'Príznaky|Žiadne príznaky v overenom rozsahu|Rozporné údaje',
+  sl: 'Znaki|Ni znakov v pregledanem obsegu|Nasprotujoči si podatki',
+  es: 'Indicios|Sin indicios en la cobertura revisada|Datos contradictorios',
+  cs: 'Příznaky|Žádné příznaky v ověřeném rozsahu|Rozporné údaje',
+  hu: 'Jelek|Nincs jel az ellenőrzött lefedettségben|Ellentmondó adatok',
+  fil: 'Mga palatandaan|Walang palatandaan sa sinuring saklaw|Magkasalungat na datos',
+  hi: 'संकेत|जाँचे गए दायरे में कोई संकेत नहीं|विरोधी डेटा',
+  bn: 'লক্ষণ|পর্যালোচিত আওতায় লক্ষণ নেই|বিরোধী তথ্য',
+  id: 'Tanda|Tidak ada tanda dalam cakupan diperiksa|Data bertentangan',
+  my: 'လက္ခဏာများ|စစ်ဆေးထားသည့်နယ်ပယ်တွင် လက္ခဏာမရှိ|ဆန့်ကျင်သောဒေတာ',
+  ru: 'Признаки|Нет признаков в проверенном охвате|Противоречивые данные',
+  'zh-Hans': '迹象|已检查覆盖范围内无迹象|数据矛盾',
+  so: 'Calaamado|Ma jiraan calaamado daboolka la hubiyey|Xog is khilaafsan',
+  tk: 'Alamatlar|Barlanan çäkde alamat ýok|Gapma-garşy maglumatlar',
+  st: 'Matšoao|Ha ho matšoao sebakeng se hlahlojoang|Data e hanyetsanang',
+  dz: 'བརྡ་མཚོན|ཞིབ་དཔྱད་ས་ཁོངས་ནང་བརྡ་མཚོན་མེད|གནས་སྡུད་འགལ་བ',
+  ar: 'مؤشرات|لا مؤشرات ضمن التغطية المراجعة|بيانات متعارضة',
+  ca: 'Indicis|Sense indicis en la cobertura revisada|Dades contradictòries',
+  ms: 'Tanda|Tiada tanda dalam liputan disemak|Data bercanggah',
+  ta: 'அறிகுறிகள்|ஆய்வு செய்த வரம்பில் அறிகுறிகள் இல்லை|முரண்பட்ட தரவு',
+};
+for (const [language, text] of Object.entries(situationTranslations))
   rows[language] += '|' + text;
 export const catalog = Object.fromEntries(
   Object.entries(rows).map(([locale, row]) => {

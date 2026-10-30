@@ -1,10 +1,23 @@
 # DisasterDAO
 
+## V3: lokaler gemeinsamer Fonds
+
+Auf `feat/disasterdao-shared-fund`: gemeinsamer Fonds, 2/3-Prüferfreigaben, proportionale Förderrunden, kumulative Tranchen, Nachweisfristen, geschütztes NGO-/Prüferportal und öffentliche Übersicht. PostgreSQL und verschlüsselter privater S3-Speicher laufen lokal; 39 UI-Sprachen und System/Hell/Dunkel sind enthalten.
+
+```sh
+npm ci
+npm run v3:start
+```
+
+**http://127.0.0.1:5173/?v3=1** · [Start und vollständiger Ablauf](docs/v3/LOCAL.md) · [Prüfbericht und Grenzen](docs/v3/VERIFICATION.md).
+
+Alle Rollen, Kostenbeispiele und Dokumente sind simuliert. Ein echtes vergleichbares 30-Tage-Ausgabenkorpus ist noch nicht belegt; keine automatische empirische Bedarfsfreigabe. V1/V2 und vorhandene Deployments bleiben erhalten. V2-Vorschau: `/?v2=1`; lokale V2 weiterhin `/?local=1`.
+
 ## V2: adaptive Auszahlungen und drei Einsätze
 
 Der Arbeitsbranch `feat/disasterdao-multi-source` ergänzt einen **neuen lokalen Fonds** mit exponentieller Erdbeben-, quadratischer Sturm- und linearer Gesundheits-Förderkurve. Pro NGO und Einsatz einmalig 500–2.000 dUSD; drei reservierte Einsatzbudgets ergeben 18.000 dUSD. V1-Contract, Testnet-Deployment und ursprüngliche Nachweise bleiben erhalten.
 
-`npm run dev` öffnet die neue Vorschau. Lokale V2: **http://127.0.0.1:5173/?local=1**. Den bisherigen MVP erreicht man mit **http://127.0.0.1:5173/?legacy=1**, lokal zusätzlich `&local=1`.
+Die V2-Vorschau ist nach `npm run dev` unter `/?v2=1` erreichbar. Lokale V2: **http://127.0.0.1:5173/?local=1**. Den bisherigen MVP erreicht man mit **http://127.0.0.1:5173/?legacy=1**, lokal zusätzlich `&local=1`.
 
 **Echt belegt:** USGS und NASA EONET mit unveränderten Airnode-Signaturen sowie lokalen Contract-Auszahlungen. **WHO blockiert:** Airnode HTTP 502 wegen Upstream HTTP 500; im Standardfonds keine WHO-Oracle-Auszahlung. Die WHO-Kurve wird ausschließlich synthetisch getestet.
 

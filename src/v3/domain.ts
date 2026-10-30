@@ -81,7 +81,9 @@ export function commitment(value: unknown): string {
       : v && typeof v === 'object'
         ? Object.fromEntries(
             Object.entries(v)
-              .sort(([a], [b]) => a.localeCompare(b))
+              .sort(([a], [b]) =>
+                Buffer.compare(Buffer.from(a), Buffer.from(b)),
+              )
               .map(([k, x]) => [k, canonical(x)]),
           )
         : typeof v === 'bigint'

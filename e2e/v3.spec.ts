@@ -179,3 +179,17 @@ test('preserved V1/V2 demo entries have accessible theme controls and fit mobile
     }
   }
 });
+
+test('development server denies private runtime keys and backend source files', async ({
+  request,
+}) => {
+  for (const path of [
+    '/.runtime/documents.key',
+    '/server/store.ts',
+    '/@fs/' + process.cwd() + '/.runtime/documents.key',
+  ]) {
+    const response = await request.get(path);
+    expect(response.status()).toBe(403);
+    expect(await response.text()).not.toMatch(/^[a-f0-9]{64}\s*$/);
+  }
+});

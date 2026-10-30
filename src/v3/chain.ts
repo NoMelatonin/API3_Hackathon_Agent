@@ -75,13 +75,16 @@ export async function verifyRuntime(config: Config) {
     [config.token, token],
   ] as const) {
     const actual = await client.getCode({ address });
+    if (!actual)
+      throw new Error(
+        'Local V3 chain state is missing; preserve the old manifest and use a new V3_DEPLOYMENT name',
+      );
     if (
-      !actual ||
       mask(actual, artifact) !==
-        mask(artifact.deployedBytecode.object, artifact)
+      mask(artifact.deployedBytecode.object, artifact)
     )
       throw new Error(
-        'V3 runtime does not match current build; preserve state and use a fresh named deployment',
+        'V3 executable runtime/build mismatch; preserve state and use a fresh named deployment',
       );
   }
   const read = (functionName: string, args: unknown[] = []) =>
@@ -114,13 +117,17 @@ export async function verifyRuntime(config: Config) {
       )
         throw new Error('V3 registry mismatch');
 }
+export const deploymentPath =
+  process.env.V3_DEPLOYMENT ?? '.runtime/v3.1-persistent.json';
+if (!/^\.runtime\/[a-zA-Z0-9_.-]+\.json$/.test(deploymentPath))
+  throw new Error('V3 deployment must be a named private runtime manifest');
 let loaded: { config: Config; fundAbi: Abi; tokenAbi: Abi } | undefined;
 export async function chain() {
   if ((await client.getChainId()) !== 31337)
     throw new Error('V3 only permits chain 31337');
   if (!loaded) {
     const [config, fund, token] = await Promise.all([
-      readFile('.runtime/v3.1-deployment.json', 'utf8'),
+      readFile(deploymentPath, 'utf8'),
       readFile('out/DisasterFundV3.sol/DisasterFundV3.json', 'utf8'),
       readFile('out/DemoUSDV3.sol/DemoUSDV3.json', 'utf8'),
     ]);
@@ -185,7 +192,7 @@ export async function deployV3() {
   if ((await client.getChainId()) !== 31337)
     throw new Error('Local chain only');
   try {
-    await access('.runtime/v3.1-deployment.json');
+    await access(deploymentPath);
     console.log('V3 already initialized; preserving deployment.');
     await chain();
     return;
@@ -248,11 +255,10 @@ export async function deployV3() {
     evidenceReviewers: addresses.slice(7, 10),
     appealReviewers: addresses.slice(10, 13),
   };
-  await writeFile(
-    '.runtime/v3.1-deployment.json',
-    JSON.stringify(config, null, 2) + '\n',
-    { flag: 'wx', mode: 0o600 },
-  );
+  await writeFile(deploymentPath, JSON.stringify(config, null, 2) + '\n', {
+    flag: 'wx',
+    mode: 0o600,
+  });
   await verifyRuntime(config);
   console.log('Isolated V3 deployed and funded: 18,000 valueless dUSD.');
 }

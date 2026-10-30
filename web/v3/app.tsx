@@ -84,6 +84,10 @@ type PublicData = {
   free: string;
   paid: string;
   chainTime: number;
+  areaStates: {
+    id: string;
+    state: 'signals' | 'clear' | 'unknown' | 'conflicting';
+  }[];
   organizations: { id: string; name: string; wallet: string }[];
   incidents: Incident[];
   areas: Area[];
@@ -495,7 +499,13 @@ export function SharedFundApp() {
                           pub.areas.find((a) => a.id === i.areaId)!.country,
                         )}
                     </h3>
-                    <span className="state-pill">◌ {t('unknown')}</span>
+                    <span className="state-pill">
+                      ◌{' '}
+                      {t(
+                        pub.areaStates.find((a) => a.id === i.areaId)?.state ??
+                          'unknown',
+                      )}
+                    </span>
                     {details({
                       incident: i,
                       area: pub.areas.find((a) => a.id === i.areaId),
