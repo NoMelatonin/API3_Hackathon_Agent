@@ -30,7 +30,7 @@ test.beforeEach(async ({ page }) => {
       return data.result;
     } };
   }, { account: config.deployer });
-  await page.goto('/?local=1');
+  await page.goto('/?local=1&legacy=1');
   await expect(page.getByRole('status')).toContainText('Fonds bereit');
 });
 test.afterEach(async () => { if (snapshot) await rpc('evm_revert', [snapshot]); });
