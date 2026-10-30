@@ -12,7 +12,7 @@ remappings = [
   "forge-std/=vendor/forge-std/src/",
   "solady/=vendor/solady/src/",
 ]
-fs_permissions = [{ access = "read", path = "./fixtures" }]
+fs_permissions = [{ access = "read", path = "./fixtures" }, { access = "read", path = "./test/fixtures" }]
 ignored_warnings_from = ["vendor"]
 
 [profile.default.fuzz]
