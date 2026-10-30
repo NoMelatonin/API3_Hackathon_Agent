@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import { encodeFunctionData, keccak256, toHex } from 'viem';
 
 // Real local chain; public unlocked Anvil accounts only. No private key enters the browser.
 const config = JSON.parse(await readFile('public/deployment.local.json', 'utf8'));
 const response = JSON.parse(await readFile('fixtures/usgs-fresh.json', 'utf8'));
+const contracts = JSON.parse(await readFile('web/contracts.json', 'utf8'));
 async function rpc(method: string, params: unknown[] = []) {
   const r = await fetch('http://127.0.0.1:8545', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
@@ -74,4 +76,45 @@ test('mobile: overview and jury fit without horizontal overflow', async ({ page 
   await page.screenshot({ path: 'test-results/dashboard-mobile.png', fullPage: true });
   await page.getByRole('button', { name: 'Signaturprüfung / Jury' }).click();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('changing a reason clears quorum immediately and late RPC results cannot restore it', async ({ page }) => {
+  const reason = await page.locator('#reason').inputValue();
+  const reasonHash = keccak256(toHex(reason.trim()));
+  const data = encodeFunctionData({ abi: contracts.fund, functionName: 'approveEmergency', args: [config.ngos[0], reasonHash] });
+  for (const address of config.committee.slice(0, 2)) {
+    await rpc('anvil_impersonateAccount', [address]);
+    await rpc('anvil_setBalance', [address, '0xde0b6b3a7640000']);
+    await rpc('eth_sendTransaction', [{ from: address, to: config.fund, data, gas: '0x30d40' }]);
+  }
+  await page.getByRole('button', { name: 'Aktualisieren', exact: true }).click();
+  await expect(page.getByText('2 / 2', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Aktualisieren', exact: true })).toBeEnabled();
+
+  const approvalsData = encodeFunctionData({ abi: contracts.fund, functionName: 'approvals', args: [config.ngos[0], reasonHash] });
+  let notifyDelayed!: () => void;
+  const delayed = new Promise<void>(resolve => { notifyDelayed = resolve; });
+  let release!: () => void;
+  const released = new Promise<void>(resolve => { release = resolve; });
+  let delayOnce = true;
+  await page.route('http://127.0.0.1:8545/', async route => {
+    const body = route.request().postDataJSON();
+    if (delayOnce && body.method === 'eth_call' && body.params?.[0]?.data === approvalsData) {
+      delayOnce = false;
+      const response = await route.fetch();
+      notifyDelayed();
+      await released;
+      await route.fulfill({ response });
+    } else await route.continue();
+  });
+  await page.getByRole('button', { name: 'Aktualisieren', exact: true }).click();
+  await delayed;
+  await page.locator('#reason').fill('Another reason, no approvals');
+  await expect(page.getByText('0 / 2', { exact: true })).toBeVisible();
+  release();
+  await expect(page.getByRole('button', { name: 'Aktualisieren', exact: true })).toBeEnabled();
+  await expect(page.getByText('0 / 2', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '1.000 dUSD freigeben', exact: true })).toBeDisabled();
+  await page.locator('#reason').fill(reason);
+  await expect(page.getByText('2 / 2', { exact: true })).toBeVisible();
 });

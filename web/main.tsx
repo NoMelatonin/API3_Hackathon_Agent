@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   BaseError, ContractFunctionRevertedError, createPublicClient, createWalletClient, custom, formatUnits,
@@ -8,6 +8,7 @@ import { baseSepolia, foundry } from 'viem/chains';
 import contracts from './contracts.json';
 import './style.css';
 import { logPages } from '../src/log-pages.ts';
+import { mergePayouts, payoutId, type Payout } from '../src/payout-history.ts';
 
 declare global { interface Window { ethereum?: EIP1193Provider } }
 interface Config {
@@ -18,7 +19,7 @@ interface Config {
 interface ResponseData { timestamp: string; data: string; signature: Hex; requestHash?: Hex; airnode?: Address }
 interface Snapshot {
   balance: bigint; totalPaid: bigint; active: boolean; claimed: boolean[];
-  activatedAt: bigint; chainTime: bigint; approvals: number; history: { ngo: string; amount: bigint; path: number; hash: Hex; block: bigint }[];
+  activatedAt: bigint; chainTime: bigint; approvals: number; approvalsKey: string; history: Payout[];
 }
 const local = new URLSearchParams(location.search).get('local') === '1';
 const chain = local ? foundry : baseSepolia;
@@ -33,25 +34,26 @@ async function history(c: Config, count: number, through: bigint): Promise<Histo
   if (cached && cached.entries.length === count) return cached.entries;
   let entries = cached?.entries ?? [];
   if (!cached && c.payoutTransactions?.length) {
-    const receipts = await Promise.all(c.payoutTransactions.map(hash => client.getTransactionReceipt({ hash })));
-    entries = receipts.flatMap(receipt => receipt.logs.filter(log => log.address.toLowerCase() === c.fund.toLowerCase()).flatMap(log => {
+    const receipts = await Promise.all([...new Set(c.payoutTransactions)].map(hash => client.getTransactionReceipt({ hash })));
+    entries = receipts.filter(receipt => receipt.status === 'success' && receipt.blockNumber <= through)
+      .flatMap(receipt => receipt.logs.filter(log => log.address.toLowerCase() === c.fund.toLowerCase()).flatMap(log => {
       try {
         const decoded = decodeEventLog({ abi: [paidEvent], data: log.data, topics: log.topics });
         return [{ ngo: decoded.args.ngo, amount: decoded.args.amount, path: decoded.args.path,
-          hash: receipt.transactionHash, block: receipt.blockNumber }];
+          hash: receipt.transactionHash, block: receipt.blockNumber, logIndex: log.logIndex }];
       } catch { return []; } // Other events in the same receipt are not payout events.
     }));
   }
   if (entries.length !== count) {
-    const from = cached ? cached.through + 1n : BigInt(c.deployedBlock);
+    const from = cached ? cached.through : BigInt(c.deployedBlock);
     const logs = await logPages(from, through, (fromBlock, toBlock) => client.getLogs({
       address: c.fund, event: paidEvent, fromBlock, toBlock,
     }));
     const combined = [...entries, ...logs.map(log => ({ ngo: log.args.ngo!, amount: log.args.amount!,
-      path: log.args.path!, hash: log.transactionHash, block: log.blockNumber }))];
-    entries = [...new Map(combined.map(entry => [entry.hash, entry])).values()];
+      path: log.args.path!, hash: log.transactionHash, block: log.blockNumber, logIndex: log.logIndex }))];
+    entries = mergePayouts(combined);
   }
-  entries.sort((a, b) => a.block > b.block ? -1 : 1);
+  entries = mergePayouts(entries);
   historyCache.set(key, { entries, through });
   return entries;
 }
@@ -100,20 +102,27 @@ function App() {
   const [responseName, setResponseName] = useState('');
   const [tab, setTab] = useState<'relief' | 'jury'>('relief');
   const reasonHash = keccak256(toHex(reason.trim()));
+  const approvalsKey = `${ngo}:${reasonHash}`;
+  const selection = useRef(approvalsKey);
+  selection.current = approvalsKey;
+  const refreshVersion = useRef(0);
 
   async function refresh(c = config) {
-    if (!c) return;
+    if (!c || selection.current !== approvalsKey) return;
+    const version = ++refreshVersion.current;
     if (await client.getChainId() !== c.chainId || c.chainId !== chain.id) throw new Error('RPC und Deployment passen nicht zur ausgewählten Testchain.');
-    const read = (functionName: string, args?: unknown[]) => client.readContract({ address: c.fund, abi: contracts.fund, functionName, args });
-    const [balance, totalPaid, active, activatedAt, block, claimed, mask] = await Promise.all([
-      client.readContract({ address: c.token, abi: contracts.token, functionName: 'balanceOf', args: [c.fund] }),
-      read('totalPaid'), read('active'), read('activatedAt'), client.getBlock(),
+    const block = await client.getBlock();
+    const read = (functionName: string, args?: unknown[]) => client.readContract({ address: c.fund, abi: contracts.fund, functionName, args, blockNumber: block.number });
+    const [balance, totalPaid, active, activatedAt, claimed, mask] = await Promise.all([
+      client.readContract({ address: c.token, abi: contracts.token, functionName: 'balanceOf', args: [c.fund], blockNumber: block.number }),
+      read('totalPaid'), read('active'), read('activatedAt'),
       Promise.all(c.ngos.map(a => read('claimed', [a]))), read('approvals', [c.ngos[ngo], reasonHash]),
     ]);
     const entries = await history(c, Number(totalPaid as bigint) / 1_000_000_000, block.number);
+    if (version !== refreshVersion.current || selection.current !== approvalsKey) return;
     setSnapshot({ balance: balance as bigint, totalPaid: totalPaid as bigint, active: active as boolean,
       activatedAt: activatedAt as bigint, chainTime: block.timestamp, claimed: claimed as boolean[], approvals: Number(mask),
-      history: entries });
+      approvalsKey, history: entries });
   }
 
   useEffect(() => {
@@ -186,7 +195,8 @@ function App() {
 
   let preview: Record<string, unknown> | undefined;
   try { preview = JSON.parse(JSON.parse(responseText).data); } catch { /* Unverified input, no inferred status. */ }
-  const votes = snapshot ? [1, 2, 4].filter(bit => snapshot.approvals & bit).length : 0;
+  const approvalMask = snapshot?.approvalsKey === approvalsKey ? snapshot.approvals : 0;
+  const votes = [1, 2, 4].filter(bit => approvalMask & bit).length;
   const paidCount = snapshot?.claimed.filter(Boolean).length ?? 0;
 
   return <>
@@ -225,8 +235,8 @@ function App() {
       </section><section className="panel"><div className="panel-heading"><span className="step">02</span><div><p className="eyebrow">MENSCHLICHE ABSICHERUNG</p><h2>Wenn Daten fehlen.</h2></div></div>
         <p className="body-copy">Zwei von drei Verantwortlichen können die Soforthilfe gemeinsam freigeben. Die Empfänger und ihr Budget bleiben verbindlich.</p>
         <label htmlFor="ngo">Empfänger</label><select id="ngo" value={ngo} onChange={e => setNgo(Number(e.target.value))}>{[0, 1, 2].map(i => <option key={i} value={i}>Demo-NGO {i + 1} · {snapshot?.claimed[i] ? 'bereits ausgezahlt' : '1.000 dUSD'}</option>)}</select>
-        <label htmlFor="reason">Gemeinsame öffentliche Begründung</label><textarea id="reason" rows={3} value={reason} onChange={e => setReason(e.target.value)} /><small className="helper">Keine personenbezogenen Informationen. Alle stimmen über exakt denselben Text-Hash ab.</small>
-        <div className="quorum"><div><strong>{votes} / 2</strong><span>Freigaben für diesen Empfänger und Grund</span></div><div className="vote-dots">{[0, 1, 2].map(i => <span key={i} className={snapshot && (snapshot.approvals & (1 << i)) ? 'voted' : ''}>{i + 1}</span>)}</div></div>
+        <label htmlFor="reason">Gemeinsame Begründung</label><textarea id="reason" rows={3} value={reason} onChange={e => setReason(e.target.value)} /><small className="helper">Nur der Text-Hash wird veröffentlicht. Den genauen Text separat teilen und aufbewahren; Leerzeichen am Anfang und Ende werden entfernt. Keine personenbezogenen Informationen.</small>
+        <div className="quorum"><div><strong>{votes} / 2</strong><span>Freigaben für diesen Empfänger und Grund</span></div><div className="vote-dots">{[0, 1, 2].map(i => <span key={i} className={approvalMask & (1 << i) ? 'voted' : ''}>{i + 1}</span>)}</div></div>
         <div className="actions"><button disabled={busy || !snapshot?.active || !!snapshot?.claimed[ngo] || !reason.trim()} onClick={() => run(() => transact('approveEmergency', [config!.ngos[ngo], reasonHash]))}>Als Verantwortlicher genehmigen</button>
           <button className="primary" disabled={busy || votes < 2 || !!snapshot?.claimed[ngo]} onClick={() => run(() => transact('executeEmergency', [config!.ngos[ngo], reasonHash]))}>1.000 dUSD freigeben</button></div>
         <p className="helper">Die Notfallzahlung ersetzt die Oracle-Zahlung. Nachprüfung bleibt erforderlich. Ein Chain-Ausfall oder ein unerreichbares Quorum wird dadurch nicht gelöst.</p>
@@ -243,7 +253,7 @@ function App() {
         </aside></div></section>}
 
       <section className="panel history"><div className="history-heading"><div><p className="eyebrow">ÖFFENTLICH NACHVOLLZIEHBAR</p><h2>Auszahlungen</h2></div><span className="pill">{snapshot?.history.length ?? 0} Einträge</span></div>
-        {!snapshot?.history.length ? <p className="empty">Noch keine Auszahlung. Jede bestätigte Freigabe erscheint hier mit Empfänger und Grund.</p> : <div className="table-wrap"><table><thead><tr><th>Empfänger</th><th>Betrag</th><th>Freigabegrund</th><th>Nachweis</th></tr></thead><tbody>{snapshot.history.map(row => <tr key={row.hash}><td>Demo-NGO {(config?.ngos.findIndex(a => a.toLowerCase() === row.ngo.toLowerCase()) ?? -1) + 1}<small>{short(row.ngo)}</small></td><td>{money(row.amount)} dUSD</td><td><span className="pill">{row.path === 0 ? 'Signiertes Ereignis' : '2/3-Notfallquorum'}</span></td><td>{local ? <code>{short(row.hash)}</code> : <a target="_blank" rel="noreferrer" href={explorer(row.hash)}>Transaktion ↗</a>}</td></tr>)}</tbody></table></div>}
+        {!snapshot?.history.length ? <p className="empty">Noch keine Auszahlung. Jede bestätigte Freigabe erscheint hier mit Empfänger und Grund.</p> : <div className="table-wrap"><table><thead><tr><th>Empfänger</th><th>Betrag</th><th>Freigabegrund</th><th>Nachweis</th></tr></thead><tbody>{snapshot.history.map(row => <tr key={payoutId(row)}><td>Demo-NGO {(config?.ngos.findIndex(a => a.toLowerCase() === row.ngo.toLowerCase()) ?? -1) + 1}<small>{short(row.ngo)}</small></td><td>{money(row.amount)} dUSD</td><td><span className="pill">{row.path === 0 ? 'Signiertes Ereignis' : '2/3-Notfallquorum'}</span></td><td>{local ? <code>{short(row.hash)}</code> : <a target="_blank" rel="noreferrer" href={explorer(row.hash)}>Transaktion ↗</a>}</td></tr>)}</tbody></table></div>}
       </section>
       <footer><span>DisasterDAO · Hackathon-Prototyp</span><p>Fiktive Organisationen · Historisches Ereignis · Wertlose Demotoken · Keine Spendenbescheinigung</p>{config && <a href={local ? '#' : explorer(config.fund, 'address')} target={local ? undefined : '_blank'} rel="noreferrer">Contract {short(config.fund)} ↗</a>}</footer>
     </main>
