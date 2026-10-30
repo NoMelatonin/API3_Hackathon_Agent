@@ -1,0 +1,26 @@
+{
+  "chainId": 84532,
+  "network": "Base Sepolia",
+  "fund": "0x8b1cad09c9be9d2e1ff38f4a490951bc1a317257",
+  "token": "0xdc6ab1e15c3f23b05276fde1ac4a7311abe8e914",
+  "deployer": "0xb6350819F8504fe3c27Ed9E9C40d83B6c9f52C55",
+  "ngos": [
+    "0x4cCd9E9853C963098B131978a699a1C03a1f5f89",
+    "0x6EB561D07534500D783143089B8942B968F1c18f",
+    "0x7c4290bB313e7c856E8930828f361915C12CE337"
+  ],
+  "committee": [
+    "0xD919797918cF626408b314DB3CA4018e4B1A01dA",
+    "0x2D3b8765F71A88464f32A009d75B74a72Ffc1e77",
+    "0x8e8D0DfDcE5F730D4852a4573A023A19CB326F2F"
+  ],
+  "airnode": "0x5aF744115e2577513D878D4263Db73b3E77E7630",
+  "requestHash": "0x226b958e9cea51240281d38535b7a0661ed95b7a21f978a122bf442ca7b8522c",
+  "deployedBlock": "52265008",
+  "transactions": {
+    "token": "0xd8a80df696e50a6db7f030b470150b26b41286cb94815fef7fc98c1c246b14e2",
+    "fund": "0x11bd812de7a7152511a97e6c5d863aec08f7296d42de5068b066e9f0bdd29392",
+    "funding": "0xe758272b8d50cf79f2a804ea24260e32cf27d08ce03caf50e9a56fdac032d5d5",
+    "activation": "0x7ba4d3bdc421e49c5d758f152dbc22b8449de22e6b948d0076d0b10cbb5787ab"
+  }
+}

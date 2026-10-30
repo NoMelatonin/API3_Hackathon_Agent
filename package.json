@@ -1,16 +1,51 @@
 {
-  "name": "disasterdao", "version": "0.1.0", "private": true,
-  "type": "module", "packageManager": "pnpm@11.28.9", "engines": {"node": ">=22.18"},
+  "name": "disasterdao",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.28.9",
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "fetch-response": "node --env-file-if-exists=.env src/fetch-response.ts",
     "request-hash": "node src/request-hash.ts",
     "verify-response": "node src/verify-response.ts",
     "check-real": "node src/check-real.ts",
+    "init-demo": "node src/init-demo.ts",
+    "deploy": "node --env-file-if-exists=.env --env-file-if-exists=.env.roles src/deploy.ts",
+    "estimate-deploy": "node --env-file-if-exists=.env --env-file-if-exists=.env.roles src/estimate-deploy.ts",
+    "verify-deployment": "node --env-file-if-exists=.env src/verify-deployment.ts",
+    "report": "node src/report.ts",
+    "submit-response": "node --env-file-if-exists=.env src/submit-response.ts",
+    "tamper": "node --env-file-if-exists=.env src/tamper.ts",
+    "local-clock": "node src/local-clock.ts",
+    "emergency": "node --env-file-if-exists=.env --env-file-if-exists=.env.roles src/emergency.ts",
+    "export-abi": "node src/export-abi.ts",
+    "test:ui": "playwright test",
     "test": "node --test src/vendor/*.test.ts src/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "forge": "forge", "anvil": "anvil",
-    "dev": "vite --host 127.0.0.1", "build": "tsc --noEmit && vite build"
+    "forge": "forge",
+    "anvil": "anvil",
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && tsc -p tsconfig.web.json && vite build"
   },
-  "dependencies": {"@x402/evm": "^2.28.0", "@x402/fetch": "^2.28.0", "viem": "^2.57.3"},
-  "devDependencies": {"@foundry-rs/forge": "1.7.1", "@foundry-rs/anvil": "1.7.1", "@types/node": "^24.19.1", "typescript": "~6.0.3", "pnpm": "11.28.9"}
+  "dependencies": {
+    "@x402/evm": "^2.28.0",
+    "@x402/fetch": "^2.28.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "viem": "^2.57.3"
+  },
+  "devDependencies": {
+    "@foundry-rs/anvil": "1.7.1",
+    "@foundry-rs/forge": "1.7.1",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.19.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "pnpm": "11.28.9",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.5"
+  }
 }

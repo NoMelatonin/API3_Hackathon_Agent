@@ -1,0 +1,60 @@
+{
+  "chainId": 84532,
+  "fund": "0x8b1cad09c9be9d2e1ff38f4a490951bc1a317257",
+  "block": "52268188",
+  "chainTime": "1793375506",
+  "realResponseFixture": "fixtures/usgs-testnet.json",
+  "realOtherRequestFixture": "fixtures/usgs-other.json",
+  "payouts": [
+    {
+      "ngo": "0x4cCd9E9853C963098B131978a699a1C03a1f5f89",
+      "amount": "1000000000",
+      "path": "oracle",
+      "evidenceHash": "0x530b19fe8e84e3483ba33ecd55b23a7afbf64794bd1b228ff73900953734983b",
+      "transaction": "0x1eb9c1960f8e73779709f0021438f1b24692e671b8c7f6b322f5fcb0001accd1",
+      "block": "52265851"
+    },
+    {
+      "ngo": "0x6EB561D07534500D783143089B8942B968F1c18f",
+      "amount": "1000000000",
+      "path": "emergency",
+      "evidenceHash": "0xeb4d4bfc66a6da975f3e341de77359a574e90842408afa91074680d59eb0912d",
+      "transaction": "0xce84643833c8529aa502befe4edbde47d9f599e02c3f83eb0b070074fbed3242",
+      "block": "52266039"
+    }
+  ],
+  "totalPaid": "2000000000",
+  "ngoBalances": [
+    "1000000000",
+    "1000000000",
+    "0"
+  ],
+  "rejectionMode": "eth_call simulations against deployed contract; no failed transactions broadcast",
+  "tamperCases": [
+    {
+      "name": "edited-value",
+      "rejected": "NotSignedByAirnode",
+      "execution": "eth_call to deployed contract",
+      "noPayout": true
+    },
+    {
+      "name": "too-old",
+      "rejected": "ResponseTooOld",
+      "execution": "eth_call to deployed contract",
+      "noPayout": true
+    },
+    {
+      "name": "another-request",
+      "rejected": "NotSignedByAirnode",
+      "execution": "eth_call to deployed contract",
+      "noPayout": true
+    },
+    {
+      "name": "wrong-key",
+      "rejected": "NotSignedByAirnode",
+      "execution": "eth_call to deployed contract",
+      "noPayout": true
+    }
+  ],
+  "projectWalletETH": "0.000169776612808317"
+}

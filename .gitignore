@@ -9,3 +9,7 @@ dist/
 .tools/
 deployments/*.local.json
 fixtures/*payment*
+public/deployment.local.json
+playwright-report/
+test-results/
+demo/videos/

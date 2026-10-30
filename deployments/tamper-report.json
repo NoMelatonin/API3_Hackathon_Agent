@@ -1,0 +1,31 @@
+{
+  "chainId": 84532,
+  "fund": "0x8b1cad09c9be9d2e1ff38f4a490951bc1a317257",
+  "block": "52265895",
+  "results": [
+    {
+      "name": "edited-value",
+      "rejected": "NotSignedByAirnode",
+      "execution": "eth_call to deployed contract",
+      "noPayout": true
+    },
+    {
+      "name": "too-old",
+      "rejected": "ResponseTooOld",
+      "execution": "eth_call to deployed contract",
+      "noPayout": true
+    },
+    {
+      "name": "another-request",
+      "rejected": "NotSignedByAirnode",
+      "execution": "eth_call to deployed contract",
+      "noPayout": true
+    },
+    {
+      "name": "wrong-key",
+      "rejected": "NotSignedByAirnode",
+      "execution": "eth_call to deployed contract",
+      "noPayout": true
+    }
+  ]
+}

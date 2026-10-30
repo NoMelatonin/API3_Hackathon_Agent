@@ -1,0 +1,11 @@
+import { readFile } from 'node:fs/promises';
+import { createTestClient, http } from 'viem';
+import { foundry } from 'viem/chains';
+import { assertChain, local, option, rpcUrl } from './deployment.ts';
+if (!local) throw new Error('Clock simulation is ONLY allowed with --local on chain 31337.');
+await assertChain();
+const response = JSON.parse(await readFile(option('--file', 'fixtures/usgs-fresh.json')!, 'utf8'));
+const client = createTestClient({ mode: 'anvil', chain: foundry, transport: http(rpcUrl) });
+await client.setNextBlockTimestamp({ timestamp: BigInt(response.timestamp) });
+await client.mine({ blocks: 1 });
+console.log('LOCAL ONLY: chain time aligned with the genuine fixture for an offline historical exercise.');
