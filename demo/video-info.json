@@ -1,0 +1,10 @@
+{
+  "durationSeconds": 74.6,
+  "width": 1280,
+  "height": 900,
+  "fps": 25,
+  "audio": false,
+  "type": "Captioned local functional walkthrough with genuine AirnodeHub fixtures and a historical chain clock; read-only live Base Sepolia evidence at the end",
+  "file": "DisasterDAO-demo.webm",
+  "checked": "FFmpeg container metadata and visual inspection at 10, 35 and 65 seconds"
+}

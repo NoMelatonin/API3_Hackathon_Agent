@@ -4,6 +4,10 @@
 
 Echte USGS-Airnode-Antworten wurden über x402 bezahlt und sowohl off-chain als auch in Solidity geprüft. Der Fonds ist auf Base Sepolia aktiv. Eine reguläre und eine 2/3-Notfallzahlung wurden bestätigt. Die vier offiziellen Ablehnungen wurden als `eth_call` am echten Deployment geprüft, ohne Zahlungen auszulösen. Lokale Browsertests führen zusätzlich echte Transaktionen auf Anvil aus.
 
+[Vorbereiteter Mitschnitt](../demo/DisasterDAO-demo.webm): **74,6 Sekunden**, 1280×900, ohne Ton, mit deutschen Texteinblendungen. Er zeigt den vollständigen lokalen Ablauf mit unveränderten echten signierten Fixtures und ausdrücklich historischer Chain-Uhr. Am Ende zeigt er die echte Base-Sepolia-Historie lesend. Die öffentliche Chain wird vom Recorder nicht verändert; NGO 3 bleibt dort offen. Dauer anhand der Container-Metadaten geprüft; Bildinhalt stichprobenartig visuell geprüft.
+
+Für einen neuen Mitschnitt zunächst eine frische lokale Chain und einen frischen lokalen Fonds wie im README bereitstellen, den Devserver starten und `npx playwright install ffmpeg` einmal ausführen. Danach `npm run record-demo`. Der Recorder verwendet nur öffentliche Anvil-Testaccounts und stellt den lokalen Zustand anschließend wieder her. Unter anderen Betriebssystemen `CHROME_PATH` setzen.
+
 ## 150-Sekunden-Ablauf
 
 | Zeit | Zeigen / sagen |
@@ -23,10 +27,10 @@ Oberfläche starten, Jurybereich öffnen, originale JSON-Datei laden und „Im C
 ## Vor der Einreichung
 
 - [ ] Offizielle Deadline nochmals prüfen: 31.10.2026, 15:00 MEZ.
-- [ ] Video auf höchstens 150 Sekunden begrenzen und abspielen.
-- [ ] Einen ggf. lokalen Mitschnitt als lokale Simulation mit unveränderten echten signierten Daten kennzeichnen; Testnet-Transaktionen separat zeigen.
+- [x] Video auf höchstens 150 Sekunden begrenzen; 74,6 Sekunden gemessen, repräsentative Frames geprüft.
+- [x] Lokalen Mitschnitt als lokale Simulation mit unveränderten echten signierten Daten kennzeichnen; Testnet-Transaktionen separat zeigen.
 - [ ] Devfolio-Entwurf prüfen, Repository-Link und Contract-Adresse eintragen.
-- [ ] Repository muss vor der Deadline öffentlich sein; Sichtbarkeit separat prüfen.
+- [ ] Repository muss vor der Deadline öffentlich sein; am 30.10.2026 als **privat** geprüft. Sichtbarkeit nicht geändert.
 - [ ] Anleitung von einer frischen Installation aus nachvollziehen; Datenabruf erfordert Test-aUSD.
 - [ ] Keine `.env`, `.env.roles`, Wallet-Exporte oder privaten Belege hochladen.
 - [ ] Devfolio tatsächlich absenden und den finalen Status prüfen.

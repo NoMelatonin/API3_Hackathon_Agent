@@ -11,6 +11,7 @@ Gemeinsamer NGO-Katastrophenfonds mit signierter Soforthilfe und einem begrenzte
 - [Notfall-Auszahlung nach zwei Freigaben, 1.000 dUSD an NGO 2](https://sepolia.basescan.org/tx/0xce84643833c8529aa502befe4edbde47d9f599e02c3f83eb0b070074fbed3242).
 - NGO 3 bleibt zunächst für Jury-Tests offen. Die Ansprüche sind einmalig; für wiederholte gültige Auszahlungen einen neuen Fonds deployen.
 - Alle vier offiziellen Manipulationsfälle am deployten Contract abgewiesen: [Testbericht](deployments/tamper-report.json). Dies sind `eth_call`-Simulationen, keine absichtlich fehlgeschlagenen Transaktionen.
+- [Demo-Video, 74,6 Sekunden](demo/DisasterDAO-demo.webm): mit deutschen Texteinblendungen, ohne Ton. Vollständiger lokaler Ablauf mit echten Signaturen und historischer Chain-Uhr, anschließend die tatsächlichen Testnet-Nachweise.
 
 ## Starten
 
@@ -124,3 +125,5 @@ Die Airnode-Signatur belegt, was **API3 über die USGS-API** gelesen hat. USGS s
 - [Demo und Abgabecheckliste](docs/DEMO.md), [Devfolio-Entwurf](docs/DEVFOLIO.md), [Testnet-Nachweise](deployments/demo-report.json).
 
 Deadline: **31.10.2026, 15:00 Uhr MEZ**. Kein autonomer Agent; kein Agent-Bonus beansprucht. Devfolio-Einreichung, Video-Upload und gegebenenfalls Änderungen der Repository-Sichtbarkeit erfolgen separat durch den Nutzer.
+
+Die GitHub-Sichtbarkeit wurde am 30.10.2026 geprüft: Das Repository ist derzeit **privat**. Vor Abgabe muss es öffentlich sein; die Sichtbarkeit wurde nicht verändert.

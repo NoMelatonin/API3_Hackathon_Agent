@@ -23,6 +23,7 @@
     "emergency": "node --env-file-if-exists=.env --env-file-if-exists=.env.roles src/emergency.ts",
     "export-abi": "node src/export-abi.ts",
     "test:ui": "playwright test",
+    "record-demo": "node demo/record.mjs",
     "test": "node --test src/vendor/*.test.ts src/*.test.ts",
     "typecheck": "tsc --noEmit",
     "forge": "forge",
