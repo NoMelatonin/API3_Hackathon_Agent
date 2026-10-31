@@ -1,0 +1,51 @@
+{
+  "checked_at": "2026-10-31T13:21:02.973238+00:00",
+  "method": "Read-only public JSON-RPC; no wallets loaded; no transactions sent",
+  "chain_id": 84532,
+  "contracts": {
+    "0x31b632b6b01d486c5c7081423950f4a6edd58728": {
+      "has_code": true,
+      "runtime_bytes": 22048
+    },
+    "0x2bea3622c9c76c473ea974588e85b0bdb1af3e64": {
+      "has_code": true,
+      "runtime_bytes": 1543
+    },
+    "0xff80001619324e2f99079ce246a89a7fa53effc5": {
+      "has_code": true,
+      "runtime_bytes": 22048
+    }
+  },
+  "receipts": {
+    "application": {
+      "hash": "0xd01c9331cfac5d835aa65a4e242d46b3c53b947f17f4f929b1bc00290f76c20d",
+      "success": true,
+      "block": 52627323,
+      "to": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+      "matches_recorded_block": true
+    },
+    "reservation": {
+      "hash": "0x90e7e6f7e84954f7c23a9bdc5b2feee4c7e151da89090decfebc14f05feb2fa7",
+      "success": true,
+      "block": 52627479,
+      "to": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+      "matches_recorded_block": true
+    },
+    "payout": {
+      "hash": "0x57de87282f6244a575ee0774aafd52bcd9da6139037457b820c98cb67256b300",
+      "success": true,
+      "block": 52627549,
+      "to": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+      "matches_recorded_block": true
+    }
+  },
+  "recipient_balance": {
+    "address": "0x7c4290bB313e7c856E8930828f361915C12CE337",
+    "before_payout_block": 0,
+    "at_payout_block": 500000000,
+    "delta": 500000000,
+    "expected_delta": 500000000,
+    "matches": true
+  },
+  "passed": true
+}

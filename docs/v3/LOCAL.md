@@ -30,6 +30,12 @@ V3_DEMO_CLOCK=0 npm start
 
 Der reguläre Worker erzeugt keine Blöcke. `npm run clock -- --seconds 1` funktioniert ausschließlich auf Chain 31337. Kein öffentliches Zeitreisen.
 
+## Fehlende Vite-Dateien reparieren
+
+`npm start`, `npm run v3:start` und auch `npm run dev` prüfen den Cache mit einer echten Vite-HTML-Verarbeitung. Ein vorhandener Lockfile-Marker genügt nicht: Fehlt etwa der erst beim Seitenaufruf geladene Chunk `vite/dist/node/chunks/dist.js`, wird aus dem bestehenden Lockfile neu installiert. Erst nach erfolgreicher Prüfung werden Cache-Zeiger und Projektlink ersetzt. Eine fehlgeschlagene Neuinstallation erhält den bisherigen Link.
+
+Bei einem Fehler aus einem alten Cache laufende Entwicklungsserver mit `Ctrl-C` beenden und `npm start` erneut ausführen; bereits gestartete Prozesse wechseln ihre geladenen Module nicht automatisch. Für eine ausdrücklich frische Installation vor dem Neustart `npm run install:local -- --clean` verwenden. Internetzugriff ist für eine Neuinstallation nötig. Im synchronisierten Projekt kein direktes `npm ci` verwenden, weil es den externen Link durch einen lokalen Ordner ersetzen kann. Umsetzung: [Installer](../../scripts/install-local.mjs), [Start](../../src/v3/start.ts), [npm-Einstiege](../../package.json).
+
 ## Base Sepolia
 
 ```sh

@@ -71,3 +71,17 @@ Der geprüfte Implementierungscommit `73e97435eeafda38726f66d10b31c283d8ecadfd` 
 Nach Sicherung aller Git-Referenzen, privaten Laufzeitdateien, Schlüssel und einer lokalen PostgreSQL-Kopie wurde ausschließlich der eigene Integrationsworktree entfernt. Die vier lokalen Arbeitsbranches wurden erst danach gelöscht. Der ursprüngliche Projektordner ist der einzige verbleibende Worktree und steht auf `main`; alte Docker-Volumes wurden nicht gelöscht. Private Sicherungen liegen ignoriert unter `.runtime/integration-backup-*`, `.runtime/integration-completed-*` sowie den beiden `integration-*.bundle`-Dateien.
 
 `npm start` wurde danach direkt im endgültigen Projektordner ausgeführt: Abhängigkeiten installiert/verlinkt, Dienste gesund, lokale Deployments erhalten/verifiziert, Oberfläche auf Port 5173 erreichbar. Der standardmäßige lokale Demo-Takt wurde frisch geprüft (Block 98 → 100 in fünf Sekunden); beide Fondsansichten waren verfügbar. Beide öffentlichen Fonds wurden zusätzlich aus diesem endgültigen Projektpfad erneut gegen den kanonischen Build verifiziert. Repository-Sichtbarkeit blieb privat. Dieses Abschlussprotokoll ändert keine Implementierung oder Geldregel.
+
+## Vite-Cache-Reparatur, 31.10.2026
+
+Anlass war `Cannot find module …/vite/dist/node/chunks/dist.js` beim Öffnen aller Oberflächen. Der im Fehler genannte ältere Cache enthielt die Vite-Dateien nicht mehr. Der Installer vertraute bisher allein auf Fingerprint und Lockfile-Marker; ein Vite-Import allein würde den erst bei HTML-Verarbeitung geladenen Parser ebenfalls nicht prüfen. Cache-Wiederverwendung und Neuinstallation werden jetzt jeweils in einem eigenen Node-Prozess mit tatsächlicher Vite-HTML-Verarbeitung geprüft. `npm run dev` ruft dieselbe Prüfung vor seinem Start auf.
+
+Neu ausgeführte Prüfungen dieser Reparatur:
+
+- `node --test scripts/install-local.test.mjs`: **7/7 bestanden**. Kontrollierte Dateisystem-Fixtures mit einem minimalen Vite-Ersatz belegen insbesondere die Reparatur eines fehlenden Lazy-Chunks trotz bestehendem Marker und Entry-Point sowie den Erhalt von Link und Cache-Zeiger bei fehlerhafter Neuinstallation. Diese Fehlerfälle wurden nicht durch Löschen von Dateien des laufenden echten Vite-Servers erzeugt.
+- `npm run install:local`: **140 gesperrte Pakete neu installiert**, echte Vite-HTML-Prüfung erfolgreich, externer Projektlink erneuert. Anschließender Start und `predev` verwendeten den geprüften Cache erneut.
+- `npm test`: **41 bestanden, 2 Infrastrukturtests wie vorgesehen übersprungen**; die sieben Installer-Regressionen gehören jetzt zum Standardlauf. `npm run typecheck` und `npm run build`: bestanden.
+- `npm start`: vorhandene lokale Deployments erhalten, PostgreSQL/S3/Anvil gesund, Backend auf 3008 und Vite auf 5173 gestartet.
+- Separater Browser-Smoke mit installiertem Playwright und lokalem Chrome: Öffentlichkeit, NGO-Anmeldung und angemeldeter NGO-Arbeitsbereich, Jury, Organisationsdetail sowie alte `?v2=1`-/`?v3=1`-Links erfolgreich geöffnet. Backend-Health 200; keine Browser-Ausnahme, kein HTTP-5xx und kein Vite-Overlay.
+
+Diese Reparaturprüfung führte keine Anträge, Auszahlungen oder Freigaben aus. Keine neue vollständige Contract-/Infrastrukturabnahme und kein neuer öffentlicher Testnet-Nachweis. Landkarte, README, UI-, Betriebs- und Implementierungsanleitung wurden für den geänderten Start abgeglichen.

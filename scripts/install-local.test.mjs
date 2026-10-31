@@ -17,6 +17,18 @@ async function fixture(t) {
     installs++;
     await fs.mkdir(path.join(target, 'node_modules'));
     await fs.writeFile(path.join(target, 'node_modules/.package-lock.json'), '{}');
+    const vite = path.join(target, 'node_modules/vite');
+    await fs.mkdir(path.join(vite, 'chunks'), { recursive: true });
+    await fs.writeFile(path.join(vite, 'package.json'), JSON.stringify({ type: 'module', exports: './index.js' }));
+    await fs.writeFile(path.join(vite, 'index.js'), `
+      export async function createServer() {
+        return {
+          transformIndexHtml: async () => (await import('./chunks/dist.js')).html,
+          close: async () => {},
+        };
+      }
+    `);
+    await fs.writeFile(path.join(vite, 'chunks/dist.js'), 'export const html = "<html></html>";');
   } };
   return { root, options, installs: () => installs };
 }
@@ -54,6 +66,35 @@ test('failed install preserves the working dependency link and releases the lock
   assert.equal(await fs.readlink(path.join(f.root, 'node_modules')), original);
   await ensureDependencies(f.options);
   assert.equal(f.installs(), 1);
+});
+
+test('repairs a missing lazy Vite chunk even when the lock marker and entry point remain', async (t) => {
+  const f = await fixture(t);
+  await ensureDependencies(f.options);
+  const original = await fs.readlink(path.join(f.root, 'node_modules'));
+  await fs.unlink(path.join(original, 'vite/chunks/dist.js'));
+  await ensureDependencies(f.options);
+  assert.equal(f.installs(), 2);
+  assert.notEqual(await fs.readlink(path.join(f.root, 'node_modules')), original);
+  // The repaired install passes a fresh runtime check and is reused.
+  await ensureDependencies(f.options);
+  assert.equal(f.installs(), 2);
+});
+
+test('does not publish or link an installation whose Vite HTML runtime is broken', async (t) => {
+  const f = await fixture(t);
+  await ensureDependencies(f.options);
+  const original = await fs.readlink(path.join(f.root, 'node_modules'));
+  const [project] = await fs.readdir(f.options.cacheRoot);
+  const pointer = path.join(f.options.cacheRoot, project, 'ready.json');
+  const previous = await fs.readFile(pointer, 'utf8');
+  await assert.rejects(ensureDependencies({ ...f.options, clean: true, installPackages: async (target) => {
+    await f.options.installPackages(target);
+    await fs.unlink(path.join(target, 'node_modules/vite/chunks/dist.js'));
+  } }), /Cannot find module/);
+  assert.equal(await fs.readlink(path.join(f.root, 'node_modules')), original);
+  assert.equal(await fs.readFile(pointer, 'utf8'), previous);
+  await ensureDependencies(f.options);
 });
 
 test('repairs a dependency directory recreated by plain npm ci; rejects an in-project cache', async (t) => {

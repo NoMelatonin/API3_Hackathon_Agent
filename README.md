@@ -1,5 +1,7 @@
 # DisasterDAO
 
+**Judges / English:** [setup and own-response tests](docs/submission/JUDGE_GUIDE_EN.md) · [current deployed contract, recorded payout and tamper evidence](docs/submission/EVIDENCE_EN.md) · [project description](docs/submission/DEVFOLIO_EN.md). Base Sepolia (84532), fund `0x31b632b6b01d486c5c7081423950f4a6edd58728`. Node.js ≥22.18 and running Docker: `npm start` for the synthetic local demo; `DISASTERDAO_PROFILE=testnet npm start` for genuine Airnode contract simulations. No publicly hosted app is claimed.
+
 Ein gemeinsamer Testfonds je Bündnis: Eine registrierte NGO belegt einen Einsatz, beantragt Mittel, reserviert ihren regelkonformen Anteil, ruft ihn an ihre feste Adresse ab und reicht private Verwendungsnachweise ein. Echte Airnode-Signaturen werden im Contract geprüft. Externe 2/3-Freigaben bilden den begrenzten Ersatzpfad und die unabhängige Verwendungsentscheidung ab.
 
 **Ein Produkt:** Öffentlichkeit, NGO-Arbeitsbereich und Jury verwenden dieselbe Anwendung und dieselben Geldregeln. Es gibt keine V1-/V2-/V3-Oberflächenwahl.
@@ -13,6 +15,8 @@ npm start
 ```
 
 Der Befehl installiert gesperrte Abhängigkeiten bei Bedarf, startet eigene Docker-Volumes, baut/verifiziert die Contracts und startet Backend/Webseite.
+
+Der Vite-Cache wird dabei mit tatsächlicher HTML-Verarbeitung geprüft und bei fehlenden Dateien neu installiert; auch `npm run dev` prüft ihn vor dem Start. [Reparatur bei fehlenden Vite-Modulen](docs/v3/LOCAL.md#fehlende-vite-dateien-reparieren).
 
 - Öffentlichkeit: http://127.0.0.1:5173/
 - NGO: http://127.0.0.1:5173/?ngo=1#/ngo

@@ -1,0 +1,151 @@
+{
+  "verifiedAt": "2026-10-31T11:59:55.536Z",
+  "chainId": 84532,
+  "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+  "token": "0x2bea3622c9c76c473ea974588e85b0bdb1af3e64",
+  "recipient": "0x7c4290bB313e7c856E8930828f361915C12CE337",
+  "amount": "500000000",
+  "unit": "6-decimal valueless dUSD",
+  "recipientBalanceBefore": "0",
+  "recipientBalanceAfter": "500000000",
+  "transferVerified": true,
+  "receipts": {
+    "application": {
+      "hash": "0xd01c9331cfac5d835aa65a4e242d46b3c53b947f17f4f929b1bc00290f76c20d",
+      "status": "success",
+      "block": "52627323"
+    },
+    "reservation": {
+      "hash": "0x90e7e6f7e84954f7c23a9bdc5b2feee4c7e151da89090decfebc14f05feb2fa7",
+      "status": "success",
+      "block": "52627479"
+    },
+    "payout": {
+      "hash": "0x57de87282f6244a575ee0774aafd52bcd9da6139037457b820c98cb67256b300",
+      "status": "success",
+      "block": "52627549"
+    }
+  },
+  "freshness": [
+    {
+      "kind": "application",
+      "signedAt": "1793447306",
+      "executionTime": "1793447333",
+      "ageSeconds": 27,
+      "historicalEvent": 1675646254342
+    },
+    {
+      "kind": "reservation",
+      "signedAt": "1793447345",
+      "executionTime": "1793447364",
+      "ageSeconds": 19,
+      "historicalEvent": 1675646254342
+    }
+  ],
+  "juryFreshness": [
+    {
+      "name": "valid-control",
+      "block": "52625298",
+      "ageSeconds": 32,
+      "accepted": true
+    },
+    {
+      "name": "edited-value",
+      "block": "52625356",
+      "ageSeconds": 44,
+      "accepted": false,
+      "revert": "NotSignedByAirnode"
+    },
+    {
+      "name": "too-old",
+      "block": "52625447",
+      "ageSeconds": 6569,
+      "accepted": false,
+      "revert": "OracleStale"
+    },
+    {
+      "name": "another-request",
+      "block": "52625521",
+      "ageSeconds": 76,
+      "accepted": false,
+      "revert": "NotSignedByAirnode"
+    },
+    {
+      "name": "wrong-key",
+      "block": "52625602",
+      "ageSeconds": 93,
+      "accepted": false,
+      "revert": "NotSignedByAirnode"
+    }
+  ],
+  "checks": {
+    "positive": {
+      "accepted": true,
+      "functionName": "automaticSubmit",
+      "block": "52625192",
+      "execution": "eth_call",
+      "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+      "chainId": 84532,
+      "result": "2"
+    },
+    "results": [
+      {
+        "name": "edited-value",
+        "expected": "NotSignedByAirnode",
+        "accepted": false,
+        "functionName": "automaticSubmit",
+        "block": "52625207",
+        "execution": "eth_call",
+        "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+        "chainId": 84532,
+        "revert": "NotSignedByAirnode",
+        "passed": true
+      },
+      {
+        "name": "too-old",
+        "expected": "OracleStale",
+        "accepted": false,
+        "functionName": "automaticSubmit",
+        "block": "52625224",
+        "execution": "eth_call",
+        "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+        "chainId": 84532,
+        "revert": "OracleStale",
+        "passed": true
+      },
+      {
+        "name": "another-request",
+        "expected": "NotSignedByAirnode",
+        "accepted": false,
+        "functionName": "automaticSubmit",
+        "block": "52625237",
+        "execution": "eth_call",
+        "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+        "chainId": 84532,
+        "revert": "NotSignedByAirnode",
+        "passed": true
+      },
+      {
+        "name": "wrong-key",
+        "expected": "NotSignedByAirnode",
+        "accepted": false,
+        "functionName": "automaticSubmit",
+        "block": "52625255",
+        "execution": "eth_call",
+        "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+        "chainId": 84532,
+        "revert": "NotSignedByAirnode",
+        "passed": true
+      }
+    ],
+    "unchanged": true,
+    "passed": true
+  },
+  "limits": [
+    "Simulated NGO and reviewer identities",
+    "Valueless test tokens",
+    "Historical disaster event; genuine newly fetched Airnode responses",
+    "Negative tests are eth_call simulations, not transactions",
+    "Spending document is fictional; no spending approval or humanitarian impact claimed"
+  ]
+}

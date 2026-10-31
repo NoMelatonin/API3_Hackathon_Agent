@@ -1,6 +1,6 @@
 # DisasterDAO: Funktionslandkarte
 
-Stand: 31.10.2026. Grundlage: integrierter Quellcode, lokale Contract-/Integrations-/Browserprüfungen und der aktuelle [Prüfbericht](VERIFICATION.md). Frühere V3-Beschreibungen stehen [in der Historie](../history/v3-LANDKARTE.md). Die Pfade `v3` bleiben interne Namen; sie bezeichnen keine getrennte Produktoberfläche.
+Stand: 31.10.2026, einschließlich Prüfung der Vite-Cache-Reparatur. Grundlage: integrierter Quellcode, lokale Contract-/Integrations-/Browserprüfungen und die separat datierten Ergebnisse im aktuellen [Prüfbericht](VERIFICATION.md). Frühere V3-Beschreibungen stehen [in der Historie](../history/v3-LANDKARTE.md). Die Pfade `v3` bleiben interne Namen; sie bezeichnen keine getrennte Produktoberfläche.
 
 ## Produkt und Oberflächen
 
@@ -76,6 +76,8 @@ Der [kanonische Contract-Build](../../scripts/build-contracts.mjs) trennt App-Ar
 Eigene Docker-Volumes und Ports erhalten vorherige V3-Daten. App-Daten, Dateischlüssel und Sitzungen sind je Profil/Bündnis getrennt. Dokumentlinks sind rollen-/dateigebunden, einmalig und 60 Sekunden gültig; Dateien höchstens 2 MiB, mit Formatprüfung. Browser erhalten keine Prüfschlüssel. Ein Neustart erhält Daten und Dateien, beendet jedoch Sitzungen.
 
 `npm start` startet die synthetische Demo einschließlich ausdrücklich lokalem Blocktakt. `DISASTERDAO_PROFILE=testnet npm start` verwendet die neuen unveränderlichen Base-Sepolia-Contracts. Kein automatisches Testnet-Deployment und kein Zurückfallen auf synthetische Daten. [Start/Wiederherstellung](LOCAL.md), [Chain-Profile](../../src/v3/chain.ts), [Speicher](../../server/store.ts), [Worker](../../server/worker.ts).
+
+Der Betreiber startet die Abhängigkeitsprüfung auch mit `npm run dev`; keine NGO-/Prüferfreigabe erforderlich. Der [Installer](../../scripts/install-local.mjs) verarbeitet vor Cache-Wiederverwendung und vor Verlinkung einer Neuinstallation tatsächlich HTML mit Vite und erkennt dadurch fehlende, verzögert geladene Dateien. Beschädigte Caches werden aus dem Lockfile neu installiert; bei Fehlern bleibt der bisherige Link erhalten. Grenze: Neuinstallation benötigt Netz, laufende Server werden nicht automatisch umgestellt. Nächster Schritt bei einem alten Modulpfad: Server beenden und neu starten. [Reparaturanleitung](LOCAL.md#fehlende-vite-dateien-reparieren).
 
 Erhalten sind außerdem: bestätigte Testeinzahlungsübersicht, begrenzte Testspenden aus dem gemeinsamen Testkonto, öffentliche freigegebene NGO-Berichte, NGO-Mitgliederaktivität, Fristerinnerungen, getrennte Organisationen, DE/EN sowie 37 als ungeprüft markierte Sprachentwürfe, RTL, Theme- und Anzeigeeinstellungen. Browserwallet-Verbindung ändert den Testspender nicht; es gibt keine erfundene Fiat-Umrechnung.
 

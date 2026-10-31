@@ -2,6 +2,8 @@
 
 Stand: 31.10.2026. Aktuelle einheitliche Oberfläche; [historische V3-Anleitung](../history/v3-UI.md).
 
+Bei `Internal Server Error` mit fehlender Vite-Datei: laufenden Server beenden und `npm start` neu ausführen. Der Start prüft/repariert den Abhängigkeitscache; [Details und manuelle Wiederherstellung](LOCAL.md#fehlende-vite-dateien-reparieren).
+
 ## Geführte NGO-Demo
 
 1. `npm start`, dann `/?ngo=1#/ngo`. Eine der sechs ausdrücklich simulierten NGOs wählen und anmelden. Jedes Bündnis hat einen eigenen Fonds.

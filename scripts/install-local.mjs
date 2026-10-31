@@ -1,15 +1,37 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
+const execFileAsync = promisify(execFile);
 const exists = async (file) => fs.lstat(file).catch((error) => {
   if (error.code === 'ENOENT') return null;
   throw error;
 });
+
+async function checkInstallation(directory) {
+  await fs.access(path.join(directory, 'node_modules/.package-lock.json'));
+  // Vite loads its HTML parser lazily: importing Vite alone misses a broken chunk.
+  // Use a fresh loader on every check, including after repairing the cache.
+  await execFileAsync(process.execPath, ['--input-type=module', '--eval', `
+    const { createServer } = await import('vite');
+    const server = await createServer({
+      configFile: false,
+      server: { middlewareMode: true, ws: false, watch: null },
+      optimizeDeps: { noDiscovery: true, include: [] },
+      logLevel: 'silent',
+    });
+    try {
+      await server.transformIndexHtml('/', '<!doctype html><html><head></head><body></body></html>');
+    } finally {
+      await server.close();
+    }
+  `], { cwd: directory, timeout: 30_000, maxBuffer: 64 * 1024 });
+}
 
 async function install(directory) {
   console.log('Installing locked dependencies outside the synced project…');
@@ -74,8 +96,16 @@ export async function ensureDependencies({
   try {
     const pointer = path.join(cache, 'ready.json');
     let ready = JSON.parse(await fs.readFile(pointer, 'utf8').catch(() => 'null'));
-    if (clean || ready?.fingerprint !== fingerprint ||
-        !await exists(path.join(ready?.directory ?? cache, 'node_modules/.package-lock.json'))) {
+    let reusable = !clean && ready?.fingerprint === fingerprint;
+    if (reusable) {
+      try {
+        await checkInstallation(ready.directory);
+      } catch {
+        reusable = false;
+        console.warn('Dependency cache is incomplete or Vite cannot render HTML; reinstalling locked dependencies.');
+      }
+    }
+    if (!reusable) {
       const directory = path.join(cache, `install-${randomUUID()}`);
       await fs.mkdir(directory);
       await fs.writeFile(path.join(directory, 'package.json'), manifest);
@@ -83,6 +113,7 @@ export async function ensureDependencies({
       // Preserve project registry/settings when present; never print their contents.
       if (npmrc.length) await fs.writeFile(path.join(directory, '.npmrc'), npmrc, { mode: 0o600 });
       await installPackages(directory);
+      await checkInstallation(directory);
       ready = { fingerprint, directory };
       const temporary = `${pointer}.${process.pid}`;
       await fs.writeFile(temporary, JSON.stringify(ready));
