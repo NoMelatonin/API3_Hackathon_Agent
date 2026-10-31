@@ -17,7 +17,11 @@ import {
   type Participant,
 } from '../src/v3/domain.ts';
 import { allocate } from '../src/v3/allocation.ts';
-import { estimate, syntheticCases, MODEL_VERSION } from '../src/v3/model.ts';
+import {
+  estimate,
+  syntheticCases,
+  MODEL_VERSION,
+} from '../src/v3/model.ts';
 import {
   type State,
   type Role,
@@ -40,10 +44,14 @@ export function must(
   if (!condition) throw new Rejected(message, status);
 }
 export function requireRole(role: Role, ...kinds: Role['kind'][]) {
-  if (!kinds.includes(role.kind)) throw new Rejected('Forbidden role', 403);
+  if (!kinds.includes(role.kind))
+    throw new Rejected('Forbidden role', 403);
 }
 export function own(role: Role, ngo: string) {
-  if (role.kind === 'ngo' && role.ngo?.toLowerCase() !== ngo.toLowerCase())
+  if (
+    role.kind === 'ngo' &&
+    role.ngo?.toLowerCase() !== ngo.toLowerCase()
+  )
     throw new Rejected('Other organization', 403);
 }
 export async function now() {
@@ -54,7 +62,9 @@ export function assessment(a: App) {
     ngo: a.ngo as Address,
     incident: hash(a.incident),
     areaVersion: 1n,
-    modelVersion: hash(MODEL_VERSION),
+    modelVersion: hash(
+      a.automatic ? 'fixed-equal-package-policy-v1' : MODEL_VERSION,
+    ),
     sources: a.sources as Hex,
     maximum: BigInt(a.maximum),
     expires: BigInt(a.expires),
@@ -71,7 +81,12 @@ export function request(a: App) {
     newEvidence: !!a.change,
   };
 }
-export function model(s: State, incident: string, time: number, ngo?: string) {
+export function model(
+  s: State,
+  incident: string,
+  time: number,
+  ngo?: string,
+) {
   const i = s.incidents.find((x) => x.id === incident);
   must(i, 'Unknown incident');
   const people = ngo
@@ -190,7 +205,11 @@ export function noConflict(s: State, role: Role, id: string) {
     403,
   );
 }
-export async function approveApplication(s: State, role: Role, id: string) {
+export async function approveApplication(
+  s: State,
+  role: Role,
+  id: string,
+) {
   noConflict(s, role, id);
   requireRole(role, 'data');
   const a = s.apps.find((x) => x.id === id);
@@ -206,10 +225,15 @@ export async function approveApplication(s: State, role: Role, id: string) {
     const data = assessment(a),
       r = request(a);
     const ah = (await c.read('assessmentHash', [data])) as Hex;
-    const key = (await c.read('keyFor', [data.ngo, data.incident])) as Hex;
+    const key = (await c.read('keyFor', [
+      data.ngo,
+      data.incident,
+    ])) as Hex;
     const existing = (await c.read('openApplication', [key])) as bigint;
     if (existing > 0n) {
-      const current = (await c.read('applications', [existing])) as unknown[];
+      const current = (await c.read('applications', [
+        existing,
+      ])) as unknown[];
       must(current[1] === ah, 'Different application already on chain');
       a.chainId = Number(existing);
     } else {
@@ -269,7 +293,11 @@ export async function allocationSnapshot(s: State, draft?: App) {
         [ngo.ngo, hash(incident.id)],
         blockNumber,
       );
-      const paid = (await c.read('paidFor', [key], blockNumber)) as bigint;
+      const paid = (await c.read(
+        'paidFor',
+        [key],
+        blockNumber,
+      )) as bigint;
       const committed = (await c.read(
         'reservedFor',
         [key],
@@ -298,7 +326,11 @@ export async function allocationSnapshot(s: State, draft?: App) {
         paid,
         reserved: committed,
         external: BigInt(app?.external ?? 0),
-        blocked: (await c.read('isBlocked', [ngo.ngo], blockNumber)) as boolean,
+        blocked: (await c.read(
+          'isBlocked',
+          [ngo.ngo],
+          blockNumber,
+        )) as boolean,
       });
     }
   const result = allocate(
@@ -487,7 +519,9 @@ export async function proposeReview(
   let manifest = '0x' + '0'.repeat(64);
   let receivedAt = time;
   if (input.kind !== 'followup') {
-    const e = (await chainEvidence()).find((x) => x.id === input.evidenceId);
+    const e = (await chainEvidence()).find(
+      (x) => x.id === input.evidenceId,
+    );
     must(e, 'Evidence missing', 404);
     manifest = e.manifest;
     if (input.kind === 'receipt') {
@@ -508,7 +542,10 @@ export async function proposeReview(
       s.apps.some((a) => a.id === input.applicationId && a.chainId),
       'Application missing',
     );
-  must(input.reason.length >= 20, 'Document checks and conflict declaration');
+  must(
+    input.reason.length >= 20,
+    'Document checks and conflict declaration',
+  );
   const duplicate = s.reviews.find(
     (r) =>
       !r.tx &&

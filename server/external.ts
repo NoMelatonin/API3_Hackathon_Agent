@@ -114,12 +114,26 @@ export async function prepareExternalReview(
   if (pending) {
     const expired =
       pending.kind === 'receipt' && (await now()) - pending.receivedAt > 3600;
+    const receiptChanged =
+      input.kind === 'receipt' &&
+      pending.manifest !==
+        commitment(
+          s.documents
+            .filter(
+              (d) =>
+                d.evidenceId === input.evidenceId &&
+                d.uploaded &&
+                d.category !== 'external-review',
+            )
+            .map((d) => ({ id: d.id, digest: d.digest, salt: d.salt })),
+        );
     const changed =
-      pending.binding &&
-      evidence &&
-      (pending.binding.manifest !== evidence.manifest ||
-        pending.binding.status !== evidence.status ||
-        pending.binding.due !== evidence.due);
+      receiptChanged ||
+      (pending.binding &&
+        evidence &&
+        (pending.binding.manifest !== evidence.manifest ||
+          pending.binding.status !== evidence.status ||
+          pending.binding.due !== evidence.due));
     must(
       !pending.external || expired || changed,
       'Open external review already exists',

@@ -115,3 +115,50 @@ Erste Versuche am bereits laufenden Entwicklungsserver scheiterten beim Demo-Ein
 Grenzen: lokale Simulation und wertlose dUSD; keine echten persönlichen Guthaben oder Zuordnung zu NGO-Auszahlungen. Keine neue V1-/V2-Transaktionsabnahme, keine vollständige WCAG-Zertifizierung und keine produktive Sicherheitsfreigabe. Der Build benötigte Schreibzugriff auf den vorhandenen externen Vite-Cache; Browser-/Stacktests lokalen Browser- und Containerzugriff.
 
 Abschließend wurde der bestehende lokale App-Prozess kontrolliert neu gestartet (`npm run v3:start`); Deployment und Docker-Volumes blieben erhalten. Danach wurden Demo, NGO und User auf Port 5173 erneut im Browser geöffnet: aktive Ansicht jeweils korrekt, keine Browserfehler, tatsächliche Anzeige 18.000 dUSD Testeinzahlungen. Der temporäre Produktions-Preview auf Port 4173 wurde nach den Tests beendet.
+
+## Zwei Bündnisse und datenbasierter Abruf — 31.10.2026
+
+Prüfgrundlage: aktueller Arbeitsstand mit `DisasterFundV3Auto`, getrennten Organisationskontexten und dem neuen Standarddeployment `.runtime/v3.2-two-alliances.json` / `-community.json`. Frühere Abschnitte beschreiben ihren jeweiligen früheren Stand.
+
+| Prüfung | Ergebnis |
+|---|---|
+| `npm run typecheck` und `npm run build` | Bestanden. Build mit vorhandenem externem Abhängigkeitscache. |
+| `npm test` | 34 bestanden; zwei Integrationstests hier erwartungsgemäß übersprungen und anschließend separat ausgeführt. |
+| `npm run forge -- test --summary` | 71 bestanden, darunter sechs neue Oracle-/Automatiktests, bestehende V1/V2/V3-Tests sowie 256 Invariantenläufe mit 128.000 Aufrufen. |
+| `npm run v3:integration` | Fünf bestanden auf dem endgültigen Deployment. Zwei echte lokale Fonds, 18.000/9.000 dUSD bestätigte Einzahlungen, sechs Rollen, Oracle-Erstzahlung, unveränderter Folgeantrag, zwei NGO-Stimmen, weitere Zahlung, private Organisationsgrenzen und bestehender externer Nachweisablauf. |
+| Vergleich der automatischen Allokation | Vorschau des Contracts stimmt mit unabhängiger TypeScript-Allokation für zwölf feste gleich gewichtete Pakete überein. Kumulative Grenzen, Reserven und globale Deckung zusätzlich in Contract-Tests geprüft. |
+| `npm run v3:test:ui` | Fünf bestanden im letzten vollständigen Lauf. Startsumme 27.000 dUSD, zwei Bündnisse, sechs NGO-Optionen, zweiter NGO-Arbeitsbereich und Oracle-Vorschau, Testspenden, Indexbestätigung, Navigation, Sprachen, RTL und mobile Darstellung. |
+| Visuelle Kontrolle | Mobile Startseite mit 18.000 dUSD / 66,7 % und 9.000 dUSD / 33,3 % kontrolliert; NGO-Abrufformular und eigene Bündniszuordnung kontrolliert. Lokale Screenshots unter `test-results/`. |
+| Start und Persistenz | Beide Fonds mit neuen privaten Manifesten bereitgestellt; alte Manifeste und Bestände nicht überschrieben. Wiederholter Start verifiziert und erhält vorhandene Contracts. Zwei lokale Zusatzblöcke bestätigen Initialeinzahlungen vor dem ersten Indexlauf. |
+
+Die Automatik prüft Signer, fest gebundenen Request, Einsatz, Gebiet, Einheit, Beobachtungszeit und höchstens fünf Minuten alte Signaturen im separaten Contract-Verifier. Neue Tests decken Erstabruf, unveränderten Folgeabruf mit zwei NGO-Stimmen, Verschlechterung, akzeptierte Nachweise, alle vier Demo-Krisentypen, Nachweissperre, Rundenabstand, fremden Absender sowie veraltete, zukünftige, manipulierte und falsch zugeordnete Antworten ab. Automatische Rundensnapshots sind auch gegen Wiederverwendung im externen Rundenpfad markiert.
+
+Nur die neuen Automatik-/Token-Contracts verwenden das zusätzliche `via-ir`-Compilerprofil. Die bestehenden Contracts behalten ihren bisherigen Compilerpfad; ihre Tests wurden nicht für den neuen Pfad umgeschrieben. Die Runtime-Prüfung vergleicht ausführbaren Code (ohne Solidity-CBOR-Quellmetadaten), prüft den separaten Verifier und gleicht feste Rollen und Oracle-Policies ab.
+
+**Grenzen:** Die Zahlungen und Identitäten bleiben lokale Simulation. Alle vier Krisentypen wurden mit synthetisch signierten Antworten demonstriert. Keine neue erfolgreiche echte Airnode-Auszahlung wurde nachgewiesen. Die vorhandenen echten USGS-/EONET-Anfragen beziehen sich auf historische Ereignisse und erfüllen das aktuelle 24-Stunden-Beobachtungsfenster nicht; reale signierte Flut-/Akutgesundheitsadapter fehlen. Fehlende oder ungeeignete Daten führen zum externen Prüfpfad, nicht zu einer synthetischen Ersatzfreigabe im Live-Modus. Die feste automatische Förderregel ist kein empirisch validiertes Bedarfsmodell.
+
+Ein zwischenzeitlicher paralleler Browserlauf setzte sein Chain-Snapshot zurück und verwarf dabei eine währenddessen erzeugte Testbereitstellung. Deren Manifeste blieben unverändert erhalten; der endgültige Stand wurde unter dem oben genannten frischen Namen bereitgestellt. Integration und letzter Browserlauf wurden danach nacheinander ausgeführt.
+
+LANDKARTE, UI-, Betriebs- und Implementierungsanleitung sowie README wurden auf beide Bündnisse und die unterschiedlichen externen/Oracle-Freigaben abgeglichen und aktualisiert.
+
+## Geführter NGO-Ablauf — 31.10.2026
+
+Prüfgrundlage: aktueller Arbeitsstand mit getrenntem `automaticSubmit`, `automaticReserve` und `claim`, neuer Fallprojektion sowie geführter Oberfläche. Neuer isolierter Demo-Datenbestand: `.runtime/v3.3-ngo-flow.json` und `-community.json`; frühere Deployments bleiben erhalten. Dies ist eine lokale Prototypprüfung mit simulierten Rollen, Dokumenten und wertlosen Testtoken.
+
+- `npm test`: 34 bestanden, 2 Integrationstests im normalen Lauf bewusst übersprungen.
+- `npm run forge -- test --summary`: 74 bestanden, keine Fehler. Enthält neun Oracle-Ablauftests, 14 V3-Tests und die V3-Invariante mit 128.000 Aufrufen. Antrag und Reservierung zahlen nicht aus; Auszahlung erhöht den Vergleichswert; abgelaufene Reservierung erhöht ihn nicht. Unveränderliche Wiederholungen, frische Daten, falsche NGO und doppelte Entnahme geprüft.
+- `npm run v3:integration`: fünf bestanden. Gesamtablauf über beide getrennten Bündnisse, Reservierung ohne Transfer, wiederholter Abruf ohne zweite Zahlung, Folgeantrag mit zwei NGO-Stimmen, separate Eingangsatteste und akzeptierte Verwendungsentscheidungen für beide Zahlungen sowie weiterer Antrag ohne zusätzliche NGO-Stimmen bei akzeptierter Gesamthistorie. Der separate bestehende externe Prüfpfad einschließlich Dateischutz, Index und Reorg ist ebenfalls enthalten.
+- Produktionsbuild und Typecheck ausgeführt. Bestehender Vite-Hinweis zu browserseitig externalisiertem `node:worker_threads` bleibt ohne Buildfehler.
+- Die Browserprüfung deckt öffentliche Navigation, Einstellungen/RTL/Themes, externe Antragsalternative, Einzahlungsbestätigung und den NGO-Kernablauf ab. Detailergebnis der abschließenden Prüfung steht im nachfolgenden Nachtrag.
+
+**Live-Check:** `npm run v3:check-live` am 31.10.2026, 09:02 UTC, getrennte lokale Live-Richtlinien in `.runtime/v3.3-live-verification.json`. USGS und NASA EONET antworteten beide HTTP 402 „Payment required“; keine frische signierte Antwort verfügbar, deshalb keine frische Signatur-/Förderfähigkeitsbestätigung. Flut und Gesundheit sind im Live-Modus deaktiviert. Das Werkzeug hat weder Gebühren bezahlt noch eine Auszahlung versucht. Bericht: `.runtime/v3-live-check.json`. Historische Fixtures und frühere V1/V2-Erfolge sind kein neuer V3-Live-Nachweis.
+
+Die Landkarte wurde mit Rollen, Ablauf, Feature-Inventar, Fristen, Architektur und Live-Grenzen abgeglichen. Anleitung, README und Implementierungsdokumentation beschreiben dieselben getrennten Schritte. Die widersprüchliche frühere Angabe „genau ein Bündnis“ wurde korrigiert.
+
+Nachtrag zur abschließenden Abnahme: Der NGO-Browserfall wurde bis zum Import des signierten Eingangsattests, Upload des externen Prüfberichts und Import der akzeptierten Verwendungsentscheidung erfolgreich durchlaufen. Antrag/Reservierung ohne Zahlung, Neuladen, 375/1440 px und getrennte Bestätigungszustände sind enthalten. Die Dokumentauswahl hat eine explizite zugängliche Beschriftung. Frühere fehlgeschlagene Prüfläufe wurden zur Korrektur von Statusdarstellung und Testisolation verwendet, nicht als Erfolge gezählt. Die Browser-Fixture sichert und restauriert jetzt die App-Daten **beider** Bündnisse zusammen mit dem Chain-Snapshot.
+
+Der ausdrücklich aktivierte Demo-Taktgeber wurde separat geprüft: innerhalb von fünf Sekunden stieg die lokale Blockhöhe von 101 auf 104. Der reguläre Worker wurde dafür nicht verändert. Zusätzliche Belege ersetzen beim erneuten Export einen offenen Eingangsauftrag; die Integration prüft diese neue Manifestbindung und unveränderliche API-Wiederholungen. Alte Signaturen werden nicht auf den neuen Auftrag übertragen.
+
+Abschließender Browserlauf gegen den normalen Server ohne Dateiwächter: **5/5 bestanden (50,4 Sekunden)**. Der vorherige Entwicklungsserver mit `--watch` wurde für die Abnahme beendet, um Neustarts durch Dateiereignisse im synchronisierten Checkout auszuschließen. Alle fünf Fälle liefen im selben finalen Lauf erfolgreich; beide Bündniszustände wurden anschließend wiederhergestellt. Typecheck und Produktionsbuild bestanden ebenfalls. Die Landkarte wurde abschließend erneut geprüft und bleibt mit diesem Umfang konsistent.
+
+Vollständiger Start mit `npm run v3:demo` anschließend ausgeführt: neue Skriptversion im lokalen Cache installiert (140 gesperrte Pakete), Docker-Dienste gesund, beide bestehenden neuen Fonds unverändert verifiziert, Backend und Vite gestartet. Der aktive Demo-Taktgeber ist eingeschaltet. Die Vorführung benötigt damit keine manuellen Zusatzblöcke; fachliche Freigaben und bestehende Fristen bleiben erforderlich.

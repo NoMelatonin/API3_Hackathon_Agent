@@ -78,3 +78,57 @@ export interface ApprovalBundle {
   payload: `0x${string}`;
   signatures: `0x${string}`[];
 }
+
+export interface AutomaticPreview {
+  remaining: string;
+  fundFree: string;
+  uncertaintyReserve: string;
+  amount: string;
+  provisional: string;
+  nextRound: number;
+  chainTime: number;
+  blocked: boolean;
+  paid: string;
+  peak: string;
+  synthetic: boolean;
+  available: boolean;
+  authorized: boolean;
+  severity: string;
+  sourceStatus: string;
+  rule: string;
+  source: {
+    signer: string;
+    requestHash: string;
+    eventId: string;
+    observedAt: string | number | null;
+    signedAt: number | null;
+    unit: string;
+  };
+}
+export interface WorkflowCase {
+  id: string;
+  incident: string;
+  explanation: string;
+  automatic: boolean;
+  step: 3 | 4 | 5;
+  actor:
+    | 'ngo'
+    | 'data_reviewers'
+    | 'evidence_reviewers'
+    | 'appeal_reviewers'
+    | 'operator_and_data_reviewers';
+  action: string;
+  reasonCodes: string[];
+  blockingEvidence: number[];
+  requested: string;
+  reserved: string;
+  paid: string;
+  reservationId?: number;
+  evidenceId?: number;
+  deadline?: number;
+  nextRound: number;
+  votes: number;
+  requiredVotes: number;
+  confirmed: boolean;
+  tx?: string;
+}

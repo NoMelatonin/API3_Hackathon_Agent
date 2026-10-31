@@ -24,7 +24,7 @@ export async function tick(
     const tip = await client.getBlockNumber({ cacheTime: 0 });
     const finalized = tip > 2n ? tip - 2n : 0n;
     const abi = JSON.parse(
-      await readFile('out/DisasterFundV3.sol/DisasterFundV3.json', 'utf8'),
+      await readFile('out/DisasterFundV3Auto.sol/DisasterFundV3Auto.json', 'utf8'),
     ).abi;
     // Rebuild from deployment through confirmed tip. On this bounded local chain, replacement is cheap,
     // removes orphaned rows after any reorg and gives restart-idempotence without trusting a stale cursor.

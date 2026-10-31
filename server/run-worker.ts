@@ -1,9 +1,7 @@
-import { Database } from './store.ts';
-import { type State } from './state.ts';
-import { tick } from './worker.ts';
-const db = new Database<State>();
+import { buildGateway } from './gateway.ts';
+const { app, work } = await buildGateway();
 try {
-  await tick(db);
+  await work();
 } finally {
-  await db.pool.end();
+  await app.close();
 }

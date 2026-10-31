@@ -656,3 +656,38 @@ body {
   .allocation-list li { grid-template-columns: 12px minmax(0, 1fr); }
   .allocation-value { grid-column: 2; text-align: start; overflow-wrap: anywhere; }
 }
+
+/* Guided NGO cases: readable steps and transaction details on small screens. */
+.workflow-case {
+  border: 1px solid var(--v3-border, #7776);
+  border-radius: 16px;
+  padding: 20px;
+  margin-block: 20px;
+}
+.workflow-quote {
+  border-inline-start: 3px solid #8965de;
+  padding-inline-start: 16px;
+  margin-block: 16px;
+}
+.workflow-code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+.workflow-steps {
+  flex-wrap: wrap;
+}
+.workflow-steps [aria-current="step"] {
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+@media (max-width: 600px) {
+  .workflow-case {
+    padding: 12px;
+  }
+  .workflow-steps {
+    display: grid;
+    gap: 8px;
+  }
+}

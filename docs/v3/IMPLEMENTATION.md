@@ -1,3 +1,5 @@
+> Aktualisierung 31.10.2026: V3 startet zwei isolierte Demo-Bündnisse und führt durch fünf getrennte NGO-Schritte. Aktuelle Regeln und Grenzen: [LANDKARTE.md](LANDKARTE.md#datenbasierter-abruf-neu). Die nachstehenden externen Prüfabläufe bleiben als Alternative erhalten.
+
 # V3 local shared fund — implementation contract
 
 Current functionality overview in German: [V3-Landkarte](LANDKARTE.md). The original delivery stages below remain historical; current external approval workflows are documented in [UI.md](UI.md).
@@ -43,3 +45,25 @@ The V3 launcher first runs `scripts/install-local.mjs`. Registry dependencies ar
 `web/v3/support-allocation.tsx` consumes the existing `Organization[]` context and `support.total` projection from `server/organizations.ts`. It sums integer token units with BigInt, renders a static SVG donut plus a semantic value list, and uses existing localized dUSD formatting. The source is cumulative confirmed deposits of shared test account 0, including initial funding, not personal or remaining balances. The current single alliance produces one 100% segment; member NGOs are not donor allocations. Rounded percentages carry a rounding notice.
 
 The context exposes organization loading/ready/error state independently of session loading, with request ordering protection for the organization response. Failed refreshes and any stale/unavailable snapshot suppress the allocation instead of displaying partial totals. Empty registry and zero deposits are distinct. No changes to backend contracts, financial rules, role permissions or wallet identity. Current verification is recorded separately in VERIFICATION.md.
+
+## Zwei Bündnisse und Oracle-Abruf — 31.10.2026
+
+`npm run v3:start` baut und startet beide lokalen Bündnisse. Neue Standardmanifeste: `.runtime/v3.3-ngo-flow.json` und die Variante `-community.json`. Alte Manifeste/Chain-Zustände/Dokumente bleiben erhalten; keine Übertragung alter Mittel oder Nachweise. Ein neuer Deploymentname erhält einen neuen getrennten Datenbestand. Die App nutzt für PostgreSQL ein aus dem Manifestnamen abgeleitetes Schema.
+
+In der NGO-Anmeldung stehen sechs simulierte NGOs zur Auswahl. **Hilfe beantragen** führt durch Ereignisprüfung, Antrag, Freigabe/Reservierung, separaten Geldabruf und Verwendungsnachweis. Antrag und Reservierung überweisen nichts. Die Contract-Regel erlaubt Erstförderung sowie Folgeförderung bei aktueller Verschlechterung oder akzeptierten/geklärten Nachweisen ohne zusätzliche NGO-Zustimmung. Andernfalls stimmen die beiden anderen berechtigten NGOs zu; eine Stimme genügt nicht. Nachweissperren, sechs Stunden Rundenabstand und 24 Stunden Reservierungsfrist bleiben bestehen. Einzelheiten: [Landkarte](LANDKARTE.md#datenbasierter-abruf-neu).
+
+Standard ist die klar markierte lokale Demo mit Signer Konto 30. Für eine andere synthetische Lage kann der Betreiber den Backend-Prozess mit z. B. `V3_DEMO_SEVERITY='{"demo-quake":7.3,"demo-flood":3}'` starten. Ein höherer Wert ist nur eine Demo-Regel, kein echter Krisennachweis.
+
+`V3_ORACLE_MODE=live` muss beim Deployment und Serverstart übereinstimmen und benötigt einen eigenen neuen `V3_DEPLOYMENT`-Namen. USGS und EONET haben Adapter mit festem Signer und Request-Hash; ihre aktuell konfigurierten historischen Ereignisse sind älter als das zulässige Beobachtungsfenster und lösen deshalb keine aktuelle Auszahlung aus. Flut/akute Gesundheit sind im Live-Modus deaktiviert. Es wurde keine neue erfolgreiche echte Airnode-Zahlung nachgewiesen. Fehler oder unpassende Daten erzeugen keine Ersatzsignaturen; stattdessen den externen Prüfpfad verwenden.
+
+Externe Betreiberbefehle für das zweite Bündnis mit `V3_ORGANIZATION=community-alliance` ausführen; Rollen heißen dort z. B. `community-data-1`. Standard ist `local-alliance`. Freigaben bleiben an Fonds und Chain gebunden. Testspenden haben eine Bündnisauswahl; das Diagramm zeigt bestätigte Einzahlungen desselben gemeinsamen Testspenderkontos.
+
+Beim lokalen Deployment erzeugt das Startwerkzeug zwei zusätzliche Anvil-Blöcke, damit beide Initialeinzahlungen vor dem ersten Indexlauf bestätigt sind. Der Worker selbst erzeugt weiterhin keine Blöcke.
+
+## Geführter NGO-Ablauf — 31.10.2026
+
+`DisasterFundV3Auto` trennt Antrag, Reservierung und Auszahlung. Anfrage-IDs sind je NGO gebunden; unveränderliche Inhaltsbindung umfasst Einsatz, Beträge und Zweckhash. Reservierung prüft erneut aktuelle signierte Daten, Sperren, Quorum/Regelfreigabe und Budget. Der Hook `_afterClaim` im Basiskontrakt erhöht den höchsten ausgezahlten Lagewert ausschließlich bei tatsächlicher Zahlung. Abgelaufene Reservierungen erhöhen ihn nicht.
+
+`server/automatic.ts` vermittelt diese Aktionen, `server/workflow.ts` projiziert den Fall aus Contract-Zuständen/Ereignissen und privaten App-Daten. `web/v3/workflow.tsx` führt durch die fünf Schritte, `web/v3/ngo.tsx` bindet private Dokumente und fallgebundene Signaturimporte an. Zwecktexte und Originalbelege bleiben außerhalb der Chain. Upload, externe Signaturen, geminte Transaktion, zwei Folgeblöcke und inhaltliche Akzeptanz sind getrennte Zustände.
+
+Ein neues Deployment samt Datenbank-Namespace verhindert eine stillschweigende ABI-Umstellung bestehender Fonds. V1/V2 bleiben erhalten. Das Live-Prüfwerkzeug zahlt weder Quellengebühren noch NGO-Mittel; HTTP 402 bleibt ein sichtbarer Betreiberbedarf. [Betrieb](LOCAL.md#geführte-demo-und-live-prüfung), [API und Bedienung](UI.md#geführte-fünf-schritte-demo).

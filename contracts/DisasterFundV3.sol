@@ -339,7 +339,7 @@ contract DisasterFundV3 is ReentrancyGuard {
         emit Released(id, r.amount);
     }
 
-    function claim(uint256 id) external nonReentrant {
+    function claim(uint256 id) public nonReentrant {
         Reservation storage r = reservations[id];
         Application storage a = applications[r.application];
         if (r.amount == 0 || r.settled) revert Invalid();
@@ -357,9 +357,12 @@ contract DisasterFundV3 is ReentrancyGuard {
             a.ngo, a.key, r.amount, block.timestamp, block.timestamp + r.deadlineDays * 1 days, 0, 0, 0, false, 0, 0
         );
         ngoEvidence[a.ngo].push(eid);
+        _afterClaim(r.application);
         token.safeTransfer(a.ngo, r.amount);
         emit Paid(eid, a.ngo, assessments[r.application].incident, r.amount, id, r.application);
     }
+
+    function _afterClaim(uint256 application) internal virtual {}
 
     function isBlocked(address ngo) public view returns (bool) {
         uint256[] storage ids = ngoEvidence[ngo];

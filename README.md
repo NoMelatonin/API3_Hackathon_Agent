@@ -1,3 +1,5 @@
+> V3-Update: Zwei lokale Demo-Bündnisse und geführter NGO-Ablauf: Ereignis belegen → beantragen → reservieren → abrufen → Verwendung nachweisen. [Regeln und Zuständigkeiten](docs/v3/LANDKARTE.md#datenbasierter-abruf-neu), [Start und Demo-/Live-Grenzen](docs/v3/LOCAL.md#zwei-bündnisse-und-oracle-abruf--31102026).
+
 # DisasterDAO
 
 ## V3: lokaler gemeinsamer Fonds und getrennte Oberflächen
@@ -8,8 +10,10 @@ Auf `disasterdao-shared-fund-ui-improvements`: getrennte Entdeckung, Organisatio
 
 ```sh
 npm run install:local
-npm run v3:start
+npm run v3:demo
 ```
+
+Für eine reibungslose lokale Vorführung erzeugt `npm run v3:demo` ausdrücklich alle zwei Sekunden Anvil-Blöcke zur Bestätigung. Der reguläre Worker erzeugt keine Blöcke. [Fünf-Schritte-Demo](docs/v3/UI.md#geführte-fünf-schritte-demo).
 
 Für spätere Starts genügt `npm run v3:start`: Abhängigkeiten werden automatisch geprüft und bei Änderungen installiert. Im cloud-synchronisierten Checkout `npm run install:local` statt direktem `npm ci` verwenden; Pakete liegen lokal außerhalb des Desktop-Ordners. [Details und Wiederherstellung](docs/v3/LOCAL.md#abhängigkeiten-ohne-cloud-blockade).
 

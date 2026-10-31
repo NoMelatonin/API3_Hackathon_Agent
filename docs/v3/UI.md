@@ -1,8 +1,10 @@
+> Aktualisierung 31.10.2026: V3 startet zwei isolierte Demo-Bündnisse und führt durch fünf getrennte NGO-Schritte. Aktuelle Regeln und Grenzen: [LANDKARTE.md](LANDKARTE.md#datenbasierter-abruf-neu). Die nachstehenden externen Prüfabläufe bleiben als Alternative erhalten.
+
 # V3: getrennte Oberflächen und externe Freigaben
 
 Für den verständlichen Gesamtüberblick: [V3-Landkarte](LANDKARTE.md).
 
-Implementierung auf `disasterdao-shared-fund-ui-improvements`. Das bestehende lokale Deployment bleibt erhalten; die Contracts wurden nicht geändert. Alle Konten, NGOs, Dokumente und Modellwerte bleiben synthetisch.
+Implementierung auf `disasterdao-shared-fund-ui-improvements`. Bestehende lokale Deployments bleiben erhalten; der getrennte Ablauf benötigt neue Contracts und verwendet ein eigenes Deployment samt Datenbank-Namespace. Alle Konten, NGOs, Dokumente und Modellwerte bleiben synthetisch.
 
 
 Lokaler Start: `npm run v3:start` prüft und installiert Abhängigkeiten bei Bedarf außerhalb des synchronisierten Desktop-Ordners. Für eine manuelle Installation `npm run install:local` verwenden. [Cloud-Blockade und Wiederherstellung](LOCAL.md#abhängigkeiten-ohne-cloud-blockade).
@@ -21,7 +23,7 @@ Die V2-Demo (auch `?local=1`) verwendet `web/demo-theme.css` und tokenisierte Ko
 
 Alle drei Einstiege zeigen dieselbe Kopf-Navigation **Demo · NGO · User** mit aktivem Zustand. Demo öffnet `/?v2=1`, NGO `/?v3=1&ngo=1`, User `/?v3=1#/home`; die lokale V2-Variante zählt ebenfalls als Demo. Organisationsdetails und öffentliche Fehlerseiten zählen als User. Die Links erhalten NGO-Sitzungen; Abmelden bleibt eine eigene Aktion. Umsetzung: `web/view-navigation.tsx`, `web/portal.tsx`, `web/v3/app.tsx`.
 
-Unter der Einleitung der User-Startseite zeigt `web/v3/support-allocation.tsx` ein Ringdiagramm mit zugänglicher Liste, Bündnisnamen, dUSD-Beträgen, Prozentanteilen und Gesamtbetrag. Grundlage ist ausschließlich `Organization.support.total` aus der vorhandenen Organisationsabfrage: bestätigte kumulierte Einzahlungen des gemeinsamen lokalen Testkontos 0 inklusive Initialfinanzierung. Summierung erfolgt mit BigInt; Prozentwerte sind auf eine Nachkommastelle gerundet, mögliche Summenabweichungen werden genannt. Keine neuen API-Endpunkte, persönlichen Guthaben, Fiat-Umrechnung oder erfundenen Organisationen. Das einzige Bündnis ergibt bei positivem Betrag 100 %; seine Mitglieds-NGOs erhalten keine erfundene Aufteilung.
+Unter der Einleitung der User-Startseite zeigt `web/v3/support-allocation.tsx` ein Ringdiagramm mit zugänglicher Liste, Bündnisnamen, dUSD-Beträgen, Prozentanteilen und Gesamtbetrag. Grundlage ist ausschließlich `Organization.support.total` aus der vorhandenen Organisationsabfrage: bestätigte kumulierte Einzahlungen des gemeinsamen lokalen Testkontos 0 inklusive Initialfinanzierung. Summierung erfolgt mit BigInt; Prozentwerte sind auf eine Nachkommastelle gerundet, mögliche Summenabweichungen werden genannt. Keine neuen API-Endpunkte, persönlichen Guthaben, Fiat-Umrechnung oder erfundenen Organisationen. Die beiden tatsächlichen Bündnisse werden nach bestätigten Testeinzahlungen gewichtet; ihre Mitglieds-NGOs erhalten keine erfundene Aufteilung.
 
 Laden, keine Organisationen, Nullsumme und Ladefehler haben eigene Zustände. Sobald ein Organisationssnapshot veraltet oder unverfügbar ist, wird keine Gesamtverteilung angezeigt. Ein fehlgeschlagener Abruf unterdrückt auch zuvor geladene Diagrammwerte. „Aktualisieren“ verwendet den bestehenden Refresh; eine geminte Spende verändert die Werte erst nach Aufnahme in den bestätigten Index. Der Bündnisname öffnet die vorhandene Detailroute. Keine Anmeldung oder Freigabe fürs Ansehen erforderlich.
 
@@ -36,7 +38,7 @@ Desktop: Ring und Liste nebeneinander; mobil untereinander. Namen umbrechen, Nav
 
 Alte Hashlinks `#public`, `#ngo` und `#alliance-local-alliance` werden weiterhin verstanden. `#review` erklärt den externen Ablauf. Die Anmeldung im eigenen NGO-Einstieg erlaubt nur NGO-Rollen. Die festen Prüferidentitäten existieren weiterhin für externe lokale Werkzeuge; sie können keine Browsersitzung eröffnen.
 
-Es existiert genau ein Bündnis. Die Listen erfinden keine weiteren Organisationen. Ein noch nicht unterstütztes Bündnis kann sowohl in der allgemeinen Entdeckung als auch im unteren Bereich erscheinen. Bei fehlendem/veraltetem Index bleibt sein Unterstützungsstatus unbekannt.
+Es existieren zwei registrierte Demo-Bündnisse. Die Listen erfinden keine weiteren Organisationen. Ein noch nicht unterstütztes Bündnis kann sowohl in der allgemeinen Entdeckung als auch im unteren Bereich erscheinen. Bei fehlendem/veraltetem Index bleibt sein Unterstützungsstatus unbekannt.
 
 Spenden verwenden unverändert das gemeinsame lokale Konto 0, maximal 1.000 dUSD pro Vorgang. Dessen vollständiger bestätigter Verlauf enthält auch die Initialfinanzierung. Er ist kein persönliches Portfolio. Auszahlungen aus dem gemeinsamen Fonds können nicht einzelnen Spenden zugeordnet werden. Eine optional verbundene Browserwallet zeigt nur ihre Adresse und ändert das Spenderkonto nicht. Eine NGO-Sitzung muss vor einer Testspende beendet werden.
 
@@ -138,3 +140,39 @@ Bestehende 39 Sprachkataloge bleiben erhalten. Neue DE/EN-Texte liegen in `web/v
 Die CSS-Einstiege werden im Produktionsbuild getrennt importiert. Die vorhandenen V1-Schriften DM Sans und Manrope werden mit ihren SIL-OFL-Lizenzen lokal unter `public/fonts/` ausgeliefert; der Demoaufbau bleibt erhalten, ohne blockierenden Google-Fonts-Abruf.
 
 Vorhandene unvollständige interne Prüfdrafts bleiben historisch gespeichert. Eine externe Vorbereitung ersetzt sie durch einen neuen Auftrag ohne übernommene Stimmen. Abgelaufene Eingangsaufträge oder Aufträge mit verändertem Nachweiszustand können ebenfalls ausdrücklich neu vorbereitet werden; gültige offene externe Aufträge werden nicht stillschweigend ersetzt.
+
+## Zwei Bündnisse und Oracle-Abruf — 31.10.2026
+
+`npm run v3:start` baut und startet beide lokalen Bündnisse. Neue Standardmanifeste: `.runtime/v3.3-ngo-flow.json` und die Variante `-community.json`. Alte Manifeste/Chain-Zustände/Dokumente bleiben erhalten; keine Übertragung alter Mittel oder Nachweise. Ein neuer Deploymentname erhält einen neuen getrennten Datenbestand. Die App nutzt für PostgreSQL ein aus dem Manifestnamen abgeleitetes Schema.
+
+In der NGO-Anmeldung stehen sechs simulierte NGOs zur Auswahl. **Hilfe beantragen** führt durch Ereignisprüfung, Antrag, Freigabe/Reservierung, separaten Geldabruf und Verwendungsnachweis. Antrag und Reservierung überweisen nichts. Die Contract-Regel erlaubt Erstförderung sowie Folgeförderung bei aktueller Verschlechterung oder akzeptierten/geklärten Nachweisen ohne zusätzliche NGO-Zustimmung. Andernfalls stimmen die beiden anderen berechtigten NGOs zu; eine Stimme genügt nicht. Nachweissperren, sechs Stunden Rundenabstand und 24 Stunden Reservierungsfrist bleiben bestehen. Einzelheiten: [Landkarte](LANDKARTE.md#datenbasierter-abruf-neu).
+
+Standard ist die klar markierte lokale Demo mit Signer Konto 30. Für eine andere synthetische Lage kann der Betreiber den Backend-Prozess mit z. B. `V3_DEMO_SEVERITY='{"demo-quake":7.3,"demo-flood":3}'` starten. Ein höherer Wert ist nur eine Demo-Regel, kein echter Krisennachweis.
+
+`V3_ORACLE_MODE=live` muss beim Deployment und Serverstart übereinstimmen und benötigt einen eigenen neuen `V3_DEPLOYMENT`-Namen. USGS und EONET haben Adapter mit festem Signer und Request-Hash; ihre aktuell konfigurierten historischen Ereignisse sind älter als das zulässige Beobachtungsfenster und lösen deshalb keine aktuelle Auszahlung aus. Flut/akute Gesundheit sind im Live-Modus deaktiviert. Es wurde keine neue erfolgreiche echte Airnode-Zahlung nachgewiesen. Fehler oder unpassende Daten erzeugen keine Ersatzsignaturen; stattdessen den externen Prüfpfad verwenden.
+
+Externe Betreiberbefehle für das zweite Bündnis mit `V3_ORGANIZATION=community-alliance` ausführen; Rollen heißen dort z. B. `community-data-1`. Standard ist `local-alliance`. Freigaben bleiben an Fonds und Chain gebunden. Testspenden haben eine Bündnisauswahl; das Diagramm zeigt bestätigte Einzahlungen desselben gemeinsamen Testspenderkontos.
+
+Beim lokalen Deployment erzeugt das Startwerkzeug zwei zusätzliche Anvil-Blöcke, damit beide Initialeinzahlungen vor dem ersten Indexlauf bestätigt sind. Der Worker selbst erzeugt weiterhin keine Blöcke.
+
+## Geführte Fünf-Schritte-Demo
+
+1. `npm run v3:demo` starten; `/?v3=1&ngo=1` öffnen und eine simulierte NGO anmelden. Beide Bündnisse sind unabhängig finanziert (18.000 / 9.000 dUSD).
+2. **Hilfe beantragen → Ereignisdaten prüfen**. Synthetische Quelle und erfüllte Regel kontrollieren; weiter zum Antrag.
+3. Zweck (mindestens 20 Zeichen), Betrag, umsetzbare Kapazität und vorhandene Finanzierung angeben. **Antrag prüfen → Antrag verbindlich einreichen**. Geldbestand der NGO bleibt unverändert.
+4. Am Fall **Freigabe prüfen → Mittel verbindlich reservieren**. Der Betrag ist jetzt gebunden, noch nicht ausgezahlt. **Reservierten Betrag abrufen** zahlt separat an die registrierte NGO. Die Reservierung gilt 24 Stunden. Geminte und bestätigte Vorgänge sind unterschiedlich beschriftet.
+5. **Nachweis öffnen**, synthetischen Ausgabennachweis hochladen (z. B. TXT mit `DISASTERDAO SYNTHETIC` als erster Zeile), **Eingangsattest zur Prüfung exportieren**. Zwei externe Nachweisprüfer signieren mit dem bestehenden CLI; direkt am Nachweis **Signaturdatei importieren** verwenden.
+6. Externen Prüfbericht als Dokumentart „Externes Prüfdokument“ hochladen. **Übergabe für Verwendungsprüfung exportieren** enthält Nachweis-/Dokument-ID und Prüferhinweise. Der Prüfer erstellt mit `prepare-review` einen eigenen Auftrag (`kind: review`, `decision: 2/3/4`, `days: 0`, eigene Begründung/Befangenheitsprüfung), signiert mit zwei verschiedenen Nachweisprüfern und gibt das Paket zurück. NGO importiert direkt am Nachweis. Nur Entscheidung 2 akzeptiert; 3 fordert nach, 4 lehnt ab.
+7. Nach akzeptierter/geklärter Gesamthistorie ist unveränderte Folgeförderung ohne zusätzliche NGO-Stimmen möglich. Sonst müssen zwei andere NGOs zustimmen oder eine aktuelle Verschlechterung vorliegen. Der Rundenabstand von sechs Stunden bleibt bestehen; der Demo-Taktgeber überspringt ihn nicht. Für einen ausdrücklich simulierten Zeitsprung: `npm run v3:clock -- --seconds 21601`.
+
+Die NGO bereitet Übergaben vor, keine eigene Prüfentscheidung. Signaturen stammen weiterhin aus externen Werkzeugen. Im zweiten Bündnis heißen Rollen z. B. `community-evidence-1` und `community-evidence-2`; CLI-Befehle dort mit `V3_ORGANIZATION=community-alliance` ausführen. Ohne Demo-Taktgeber müssen zwei lokale Folgeblöcke und ein Indexlauf ausdrücklich erfolgen.
+
+### Neue Schnittstellen
+
+- `POST /api/v3/automatic/preview`: Quelle, Förderregel, aktueller möglicher Anteil, Restspielraum, freie Mittel, Unsicherheitsreserve und Freigabestatus; keine Speicherung oder Geldbindung.
+- `POST /api/v3/automatic/submit`: bisherige Betragsfelder plus `explanation` und stabile `requestId`; eröffnet ausschließlich den Antrag. Hash des Zwecks und Anfrage-ID werden an den Contract gebunden. Gleiche ID mit anderen Daten wird abgelehnt.
+- `POST /api/v3/automatic/reserve`: `{ "application": "APP_ID" }`; prüft frische Quelle und aktuelle Regeln und reserviert. Auszahlung bleibt beim bestehenden Reservierungsendpunkt mit `action: claim`.
+- `GET /api/v3/workflow`: organisations-/NGO-bezogene Fälle mit Schritt, Zuständigkeit, nächster Aktion, Sperrgründen, Fristen, Beträgen und Bestätigungsstand.
+- `POST /api/v3/evidence/:id/handoff`: bereitet ausschließlich ein extern zu signierendes Eingangsattest für eigene Belege vor.
+- `POST /api/v3/evidence/:id/approvals/import`: importiert ausschließlich zum Nachweis gehörende externe Freigaben.
+- Der alte Sofortabruf `/automatic/claim` liefert HTTP 410 mit Wechselhinweis. Contract-ABI: `automaticSubmit(request,purposeHash,requestId)`, `automaticReserve(applicationId,request)` und anschließend `claim(reservationId)`.

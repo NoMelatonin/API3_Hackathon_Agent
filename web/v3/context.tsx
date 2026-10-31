@@ -1,6 +1,12 @@
 import type { UIKey } from './copy.ts';
 import React, { createContext, useContext } from 'react';
-import type { App, Doc, Review, Role, Report } from '../../server/state.ts';
+import type {
+  App,
+  Doc,
+  Review,
+  Role,
+  Report,
+} from '../../server/state.ts';
 import type { Organization } from '../../src/v3/ui-types.ts';
 import { formatDate, formatToken } from './i18n.ts';
 export interface Evidence {
@@ -33,18 +39,27 @@ export interface Portal {
     expires: number;
     settled: boolean;
   }[];
-  governance: { id: string; ngo: string; incident: string; change: string }[];
+  governance: {
+    id: string;
+    ngo: string;
+    incident: string;
+    change: string;
+  }[];
 }
 export async function api<T>(
   path: string,
   method = 'GET',
   body?: unknown,
+  organization?: string,
 ): Promise<T> {
   const r = await fetch('/api/v3' + path, {
     method,
     headers: {
       'x-v3-request': 'local-prototype',
-      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...(organization ? { 'x-v3-organization': organization } : {}),
+      ...(body === undefined
+        ? {}
+        : { 'Content-Type': 'application/json' }),
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
@@ -63,7 +78,9 @@ export function amount(value: string) {
 }
 export function saveJSON(name: string, data: unknown) {
   const url = URL.createObjectURL(
-    new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+    new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json',
+    }),
   );
   const a = document.createElement('a');
   a.href = url;

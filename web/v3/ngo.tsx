@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { ApprovalBundle, Preview } from '../../src/v3/ui-types.ts';
 import { api, amount, saveJSON, useUI, type Evidence } from './context.tsx';
+import { NGOFlow } from './workflow.tsx';
 import { ActivityList, FundMetrics } from './components.tsx';
 
 function ApplicationWizard({ onClose }: { onClose: () => void }) {
@@ -104,25 +105,29 @@ function ApplicationWizard({ onClose }: { onClose: () => void }) {
             </label>
             <fieldset>
               <legend>{tr('conflicted_ngos_for_follow_up_voting')}</legend>
-              {organizations[0]?.members.map((m, index) =>
-                m.wallet.toLowerCase() ===
-                portal!.role.ngo?.toLowerCase() ? null : (
-                  <label className="checkbox" key={m.id}>
-                    <input
-                      type="checkbox"
-                      checked={(conflicts & (1 << index)) !== 0}
-                      onChange={(e) =>
-                        setConflicts((previous) =>
-                          e.target.checked
-                            ? previous | (1 << index)
-                            : previous & ~(1 << index),
-                        )
-                      }
-                    />
-                    {m.name}
-                  </label>
-                ),
-              )}
+              {organizations
+                .find((o) =>
+                  o.members.some((m) => m.wallet === portal!.role.ngo),
+                )
+                ?.members.map((m, index) =>
+                  m.wallet.toLowerCase() ===
+                  portal!.role.ngo?.toLowerCase() ? null : (
+                    <label className="checkbox" key={m.id}>
+                      <input
+                        type="checkbox"
+                        checked={(conflicts & (1 << index)) !== 0}
+                        onChange={(e) =>
+                          setConflicts((previous) =>
+                            e.target.checked
+                              ? previous | (1 << index)
+                              : previous & ~(1 << index),
+                          )
+                        }
+                      />
+                      {m.name}
+                    </label>
+                  ),
+                )}
             </fieldset>
           </>
         )}
@@ -249,10 +254,18 @@ async function uploadDocument(id: number, file: File, category: string) {
   if (!r.ok) throw new Error((await r.json()).error ?? String(r.status));
 }
 function EvidenceCard({ e }: { e: Evidence }) {
-  const { portal, tr, money, date, run, busy } = useUI();
+  const { portal, tr, money, date, run, busy, locale } = useUI();
   const [category, setCategory] = useState('expenditure-evidence'),
     [interim, setInterim] = useState('');
   const docs = portal!.documents.filter((d) => d.evidenceId === e.id);
+  const waitingReceipt = portal!.reviews.some(
+    (r) =>
+      r.evidenceId === e.id &&
+      r.kind === 'receipt' &&
+      !r.tx &&
+      !r.superseded &&
+      portal!.chainTime - r.receivedAt <= 3600,
+  );
   const received = docs.some(
     (d) => d.uploaded && d.category !== 'external-review',
   );
@@ -268,17 +281,16 @@ function EvidenceCard({ e }: { e: Evidence }) {
   const due = e.status === 3 ? e.responseDue : e.due;
   const overdue = [0, 3].includes(e.status) && portal!.chainTime > due;
   return (
-    <article className="evidence-card">
+    <article className="evidence-card" id={`evidence-${e.id}`}>
       <div className="section-heading">
         <h3>
           {tr('payout')} #{e.id} · {money(e.amount)}
         </h3>
         <span className={overdue ? 'badge error' : 'badge'}>
-          {!e.confirmed
-            ? tr('contract_state_index_confirmation_pending')
-            : overdue
-              ? tr('overdue')
-              : states[e.status]}
+          {!e.confirmed && (
+            <>{tr('contract_state_index_confirmation_pending')} · </>
+          )}
+          {overdue ? tr('overdue') : states[e.status]}
         </span>
       </div>
       <p>
@@ -295,9 +307,55 @@ function EvidenceCard({ e }: { e: Evidence }) {
           ? tr('document_saved_upload_alone_is_neither_a')
           : tr('no_completed_expenditure_evidence_upload_yet')}
       </p>
+      <p>
+        <strong>
+          {locale === 'de' ? 'Jetzt zuständig: ' : 'Responsible now: '}
+        </strong>
+        {waitingReceipt
+          ? locale === 'de'
+            ? 'zwei Nachweisprüfer: Eingangsattest signieren. Danach importiert Ihre NGO das Paket.'
+            : 'two evidence reviewers: sign the receipt. Your NGO then imports the package.'
+          : e.status === 5
+            ? locale === 'de'
+              ? 'zwei Einspruchsprüfer: Klärung signieren. Ihre NGO importiert die Entscheidung.'
+              : 'two appeal reviewers: sign the resolution. Your NGO imports the decision.'
+            : e.status === 4
+              ? locale === 'de'
+                ? 'Ihre NGO: Ablehnung prüfen und gegebenenfalls innerhalb von 14 Tagen Einspruch einlegen.'
+                : 'your NGO: review the rejection and appeal within 14 days if needed.'
+              : e.status === 1
+                ? locale === 'de'
+                  ? 'zwei Nachweisprüfer: Verwendung prüfen und Entscheidung signieren. Ihre NGO lädt den externen Bericht hoch und importiert die Entscheidung.'
+                  : 'two evidence reviewers: check spending and sign a decision. Your NGO uploads the external report and imports the decision.'
+                : [2, 6].includes(e.status)
+                  ? locale === 'de'
+                    ? 'Verwendung akzeptiert/geklärt. Weitere Anträge benötigen keine zusätzliche NGO-Zustimmung, solange alle Nachweise akzeptiert/geklärt bleiben.'
+                    : 'Spending accepted/resolved. Further applications need no peer approval while all evidence remains accepted/resolved.'
+                  : locale === 'de'
+                    ? 'Ihre NGO. Belege hochladen, dann Eingangsattest zur externen Prüfung exportieren.'
+                    : 'your NGO. Upload evidence, then export the receipt handoff for external review.'}
+      </p>
+      {received && [0, 3].includes(e.status) && (
+        <button
+          disabled={busy}
+          onClick={() =>
+            run(async () =>
+              saveJSON(
+                `RECEIPT-${e.id}.json`,
+                await api(`/evidence/${e.id}/handoff`, 'POST'),
+              ),
+            )
+          }
+        >
+          {locale === 'de'
+            ? 'Eingangsattest zur Prüfung exportieren'
+            : 'Export receipt for review'}
+        </button>
+      )}
+      <EvidenceImport evidenceId={e.id} />
       <label>
         {tr('document_type')}
-        <select value={category} onChange={(x) => setCategory(x.target.value)}>
+        <select aria-label={tr('document_type')} value={category} onChange={(x) => setCategory(x.target.value)}>
           <option value="expenditure-evidence">
             {tr('expenditure_evidence')}
           </option>
@@ -358,6 +416,31 @@ function EvidenceCard({ e }: { e: Evidence }) {
           </li>
         ))}
       </ul>
+      {e.status === 1 && (
+        <button
+          disabled={
+            busy ||
+            !docs.some((d) => d.uploaded && d.category === 'external-review')
+          }
+          onClick={() => {
+            const document = docs
+              .filter((d) => d.uploaded && d.category === 'external-review')
+              .at(-1);
+            saveJSON(`review-handoff-${e.id}.json`, {
+              kind: 'review',
+              days: 0,
+              evidenceId: e.id,
+              documentId: document?.id,
+              instructions:
+                'External reviewer: download and check the report, then use v3:approvals prepare-review with kind=review, your reason/conflict declaration, decision=2/3/4 and days=0. Sign with two evidence reviewers. This handoff is not a decision.',
+            });
+          }}
+        >
+          {locale === 'de'
+            ? 'Übergabe für Verwendungsprüfung exportieren'
+            : 'Export spending review handoff'}
+        </button>
+      )}
       <details>
         <summary>{tr('submit_interim_report')}</summary>
         <form
@@ -432,12 +515,53 @@ function EvidenceCard({ e }: { e: Evidence }) {
     </article>
   );
 }
+function EvidenceImport({ evidenceId }: { evidenceId: number }) {
+  const { run, busy, tr } = useUI();
+  const [status, setStatus] = useState('');
+  return (
+    <label>
+      {tr('import_signature_file')}
+      <input
+        type="file"
+        accept=".json,application/json"
+        disabled={busy}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = '';
+          if (!file) return;
+          void run(async () => {
+            setStatus(tr('checking_signatures'));
+            try {
+              if (file.size > 65536)
+                throw new Error(tr('signature_file_too_large'));
+              await api(
+                `/evidence/${evidenceId}/approvals/import`,
+                'POST',
+                JSON.parse(await file.text()),
+              );
+              setStatus(
+                tr('transaction_mined_waiting_for_two_confirmation_blocks'),
+              );
+            } catch (error) {
+              setStatus(tr('import_failed_success_has_not_been_confirmed'));
+              throw error;
+            }
+          });
+        }}
+      />
+      <span role="status">{status}</span>
+    </label>
+  );
+}
 export function NGOPage() {
-  const { portal, organizations, tr, run, busy, money, date } = useUI();
+  const { portal, organizations, tr, run, busy, money, date, locale } = useUI();
   const [wizard, setWizard] = useState(false),
     [importStatus, setImportStatus] = useState('');
   useEffect(() => setWizard(false), [portal?.role.id]);
   if (!portal) return null;
+  const memberOrganizations = organizations.filter((o) =>
+    o.members.some((m) => m.wallet === portal.role.ngo),
+  );
   const pending = portal.evidence.filter((e) => ![2, 6].includes(e.status));
   const completed = portal.evidence.filter((e) => [2, 6].includes(e.status));
   async function exportFile(purpose: string, target: string) {
@@ -451,39 +575,32 @@ export function NGOPage() {
       <section className="hero">
         <p className="eyebrow">NGO WORKSPACE / {tr('simulated_session')}</p>
         <h1>{portal.role.name}</h1>
-        <p>{tr('member_of_disasterdao_relief_alliance')}</p>
-        <button
-          className="primary"
-          disabled={portal.blocked}
-          onClick={() => {
-            setWizard(true);
-            setTimeout(
-              () =>
-                document.getElementById('application-form')?.scrollIntoView(),
-              0,
-            );
-          }}
-        >
-          {tr('start_application')}
-        </button>
+        <p>
+          {
+            organizations.find((o) =>
+              o.members.some((m) => m.wallet === portal.role.ngo),
+            )?.name
+          }
+        </p>
         {portal.blocked && (
           <p role="alert">
             {tr('further_payouts_are_blocked_check_outstanding_evidence')}
           </p>
         )}
       </section>
-      {organizations.map((o) => (
+      {memberOrganizations.map((o) => (
         <FundMetrics key={o.id} organization={o} />
       ))}
-      <section className="panel">
-        <h2>{tr('how_approval_works')}</h2>
-        <ol className="steps">
-          <li>{tr('submit_application_2')}</li>
-          <li>{tr('import_external_approvals')}</li>
-          <li>{tr('claim_reservation')}</li>
-        </ol>
-        <p>{tr('the_local_server_signs_ngo_transactions_with')}</p>
-      </section>
+      <NGOFlow
+        key={portal.role.id}
+        external={() => {
+          setWizard(true);
+          setTimeout(
+            () => document.getElementById('application-form')?.scrollIntoView(),
+            0,
+          );
+        }}
+      />
       <section className="panel">
         <h2>{tr('outstanding_evidence')}</h2>
         {!pending.length && <p>{tr('no_outstanding_evidence')}</p>}
@@ -498,79 +615,6 @@ export function NGOPage() {
           ))}
       </section>
       {wizard && <ApplicationWizard onClose={() => setWizard(false)} />}
-      <section className="panel">
-        <h2>{tr('applications_and_reservations')}</h2>
-        {portal.apps.map((a) => (
-          <article className="workflow-row" key={a.id}>
-            <h3>
-              {a.incident} · {money(a.requested)}
-            </h3>
-            <p>
-              {tr('status')}: {a.status} · {date(a.createdAt)}
-            </p>
-            <code>{a.id}</code>
-            {a.tx && <code>{a.tx}</code>}
-            {a.status === 'submitted' && (
-              <button
-                disabled={busy}
-                onClick={() => run(() => exportFile('APPLICATION', a.id))}
-              >
-                {tr('export_approval_request')}
-              </button>
-            )}
-            {a.chainId &&
-              a.status === 'reviewed' &&
-              portal.chainTime > a.createdAt + 259200 && (
-                <button
-                  disabled={busy}
-                  onClick={() =>
-                    run(() =>
-                      api(`/applications/${a.id}`, 'POST', {
-                        action: 'expire',
-                      }),
-                    )
-                  }
-                >
-                  {tr('close_expired_follow_up')}
-                </button>
-              )}
-          </article>
-        ))}
-        {portal.reservations
-          .filter((r) => !r.settled)
-          .map((r) => (
-            <article className="workflow-row" key={r.id}>
-              <strong>
-                {tr('reserved')}: {money(r.amount)}
-              </strong>
-              <p>
-                {tr('claim_by')}: {date(r.expires)}
-              </p>
-              <button
-                disabled={
-                  busy || portal.blocked || r.expires < portal.chainTime
-                }
-                onClick={() =>
-                  run(() =>
-                    api(`/reservations/${r.id}`, 'POST', { action: 'claim' }),
-                  )
-                }
-              >
-                {tr('claim_payout')}
-              </button>
-              <button
-                disabled={busy || r.expires >= portal.chainTime}
-                onClick={() =>
-                  run(() =>
-                    api(`/reservations/${r.id}`, 'POST', { action: 'release' }),
-                  )
-                }
-              >
-                {tr('release_expired_reservation')}
-              </button>
-            </article>
-          ))}
-      </section>
       <section className="panel">
         <h2>{tr('external_signature_approvals')}</h2>
         <p>{tr('upload_the_review_document_against_its_evidence')}</p>
@@ -647,7 +691,9 @@ export function NGOPage() {
               disabled={busy}
               onClick={() =>
                 run(() =>
-                  api(`/applications/${a.id}`, 'POST', { action: 'vote' }),
+                  api(`/applications/${a.id}`, 'POST', {
+                    action: 'vote',
+                  }),
                 )
               }
             >
@@ -659,7 +705,7 @@ export function NGOPage() {
       <section className="panel">
         <h2>{tr('other_ngos_in_the_fund')}</h2>
         <ul className="member-list">
-          {organizations
+          {memberOrganizations
             .flatMap((o) => o.members)
             .filter(
               (m) => m.wallet.toLowerCase() !== portal.role.ngo?.toLowerCase(),
@@ -673,7 +719,7 @@ export function NGOPage() {
         </ul>
         <p>{tr('the_fund_activity_below_shows_available_deposits')}</p>
       </section>
-      {organizations.map((o) => (
+      {memberOrganizations.map((o) => (
         <ActivityList key={o.snapshot.hash} id={o.id} />
       ))}
       {completed.length > 0 && (

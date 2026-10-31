@@ -1,3 +1,5 @@
+> Aktualisierung 31.10.2026: V3 startet zwei isolierte Demo-Bündnisse und führt durch fünf getrennte NGO-Schritte. Aktuelle Regeln und Grenzen: [LANDKARTE.md](LANDKARTE.md#datenbasierter-abruf-neu). Die nachstehenden externen Prüfabläufe bleiben als Alternative erhalten.
+
 # DisasterDAO V3 — lokaler Gesamtprototyp
 
 Zum Verständnis von Funktionen, Rollen und Umsetzung: [V3-Landkarte](LANDKARTE.md).
@@ -120,3 +122,32 @@ npm run v3:test:ui
 Integration und UI benötigen den laufenden Stack und ein unbenutztes finales V3-Deployment. Integration verwendet ein eigenes DB-Schema und Chain-Snapshots; UI speichert den Anwendungszustand und stellt ihn samt Chain nach jedem Test wieder her. Diese Prüfungen nicht gleichzeitig mit manuellen Transaktionen ausführen. Chrome bzw. ein installiertes Playwright-Chromium muss vorhanden sein.
 
 Details zu ausgeführten Prüfungen und verbleibenden Grenzen: [Abnahme](VERIFICATION.md). Die Legacy-Transaktions-Browsertests benötigen weiterhin ihre eigenen frischen historischen V1/V2-Deployments; der V3-Start stellt diese bewusst nicht neu bereit.
+
+## Zwei Bündnisse und Oracle-Abruf — 31.10.2026
+
+`npm run v3:start` baut und startet beide lokalen Bündnisse. Neue Standardmanifeste: `.runtime/v3.3-ngo-flow.json` und die Variante `-community.json`. Alte Manifeste/Chain-Zustände/Dokumente bleiben erhalten; keine Übertragung alter Mittel oder Nachweise. Ein neuer Deploymentname erhält einen neuen getrennten Datenbestand. Die App nutzt für PostgreSQL ein aus dem Manifestnamen abgeleitetes Schema.
+
+In der NGO-Anmeldung stehen sechs simulierte NGOs zur Auswahl. **Hilfe beantragen** führt durch Ereignisprüfung, Antrag, Freigabe/Reservierung, separaten Geldabruf und Verwendungsnachweis. Antrag und Reservierung überweisen nichts. Die Contract-Regel erlaubt Erstförderung sowie Folgeförderung bei aktueller Verschlechterung oder akzeptierten/geklärten Nachweisen ohne zusätzliche NGO-Zustimmung. Andernfalls stimmen die beiden anderen berechtigten NGOs zu; eine Stimme genügt nicht. Nachweissperren, sechs Stunden Rundenabstand und 24 Stunden Reservierungsfrist bleiben bestehen. Einzelheiten: [Landkarte](LANDKARTE.md#datenbasierter-abruf-neu).
+
+Standard ist die klar markierte lokale Demo mit Signer Konto 30. Für eine andere synthetische Lage kann der Betreiber den Backend-Prozess mit z. B. `V3_DEMO_SEVERITY='{"demo-quake":7.3,"demo-flood":3}'` starten. Ein höherer Wert ist nur eine Demo-Regel, kein echter Krisennachweis.
+
+`V3_ORACLE_MODE=live` muss beim Deployment und Serverstart übereinstimmen und benötigt einen eigenen neuen `V3_DEPLOYMENT`-Namen. USGS und EONET haben Adapter mit festem Signer und Request-Hash; ihre aktuell konfigurierten historischen Ereignisse sind älter als das zulässige Beobachtungsfenster und lösen deshalb keine aktuelle Auszahlung aus. Flut/akute Gesundheit sind im Live-Modus deaktiviert. Es wurde keine neue erfolgreiche echte Airnode-Zahlung nachgewiesen. Fehler oder unpassende Daten erzeugen keine Ersatzsignaturen; stattdessen den externen Prüfpfad verwenden.
+
+Externe Betreiberbefehle für das zweite Bündnis mit `V3_ORGANIZATION=community-alliance` ausführen; Rollen heißen dort z. B. `community-data-1`. Standard ist `local-alliance`. Freigaben bleiben an Fonds und Chain gebunden. Testspenden haben eine Bündnisauswahl; das Diagramm zeigt bestätigte Einzahlungen desselben gemeinsamen Testspenderkontos.
+
+Beim lokalen Deployment erzeugt das Startwerkzeug zwei zusätzliche Anvil-Blöcke, damit beide Initialeinzahlungen vor dem ersten Indexlauf bestätigt sind. Der Worker selbst erzeugt weiterhin keine Blöcke.
+
+## Geführte Demo und Live-Prüfung
+
+`npm run v3:demo` aktiviert ausdrücklich `V3_DEMO_CLOCK=1`. Nur der lokale Server erzeugt dann alle zwei Sekunden einen Anvil-Block und stößt den Indexer an. Der reguläre Worker verändert keine Chain-Zeit. Der Taktgeber bestätigt Transaktionen, überspringt aber keine Runden-/Nachweisfristen. Browser- und Integrationstests ohne Taktgeber ausführen, da sie Snapshots verwenden.
+
+Standard: `.runtime/v3.3-ngo-flow.json` und `.runtime/v3.3-ngo-flow-community.json`; alte Fonds und Dateien werden nicht migriert oder gelöscht. Einmalig mit dem aktuellen Build deployen; `v3:start` übernimmt dies. [Vorführschritte](UI.md#geführte-fünf-schritte-demo).
+
+Echte Quellen separat prüfen (keine Auszahlung und keine automatische Bezahlung):
+
+```sh
+V3_ORACLE_MODE=live V3_DEPLOYMENT=.runtime/v3.3-live-verification.json npm run v3:deploy
+npm run v3:check-live
+```
+
+Das erste Kommando erzeugt ausschließlich getrennte lokale Testfonds mit Live-Richtlinien. Das zweite prüft echte Antworten samt Signatur und Contract-Regel und speichert `.runtime/v3-live-check.json`. Am 31.10.2026 antworteten USGS und EONET mit HTTP 402 „Payment required“; damit konnte keine frische signierte Antwort geprüft werden. Flut/Gesundheit bleiben deaktiviert. Keine Ersatzsignaturen, keine Lockerung der Regeln und kein neuer V3-Live-Auszahlungsnachweis.

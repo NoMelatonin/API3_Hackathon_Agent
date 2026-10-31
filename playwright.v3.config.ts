@@ -5,5 +5,5 @@ export default defineConfig({
   testMatch: '**/v3.spec.ts',
   timeout: 120000,
   expect: { timeout: 15000 },
-  use: { ...base.use, baseURL: process.env.V3_UI_URL ?? base.use?.baseURL },
+  use: { ...base.use, actionTimeout: 15000, baseURL: process.env.V3_UI_URL ?? base.use?.baseURL },
 });

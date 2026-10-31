@@ -1,13 +1,22 @@
+import {
+  automaticPreview,
+  automaticSubmit,
+  automaticReserve,
+  type AutomaticSubmission,
+  type AutomaticInput,
+} from './automatic.ts';
+import { workflowCases } from './workflow.ts';
 import { organizationData, paginate } from './organizations.ts';
 import { previewApplication } from './preview.ts';
 import {
+  prepareExternalReview,
   authorizeApproval,
   exportApproval,
   importApproval,
 } from './external.ts';
 import type { ApprovalBundle } from '../src/v3/ui-types.ts';
 import Fastify from 'fastify';
-import { situation } from '../src/v3/domain.ts';
+import { commitment, situation } from '../src/v3/domain.ts';
 import { reviewTarget } from '../src/v3/deadlines.ts';
 import {
   randomBytes,
@@ -18,7 +27,12 @@ import {
 } from 'node:crypto';
 import { Database, Documents, json } from './store.ts';
 import { seed, type State, type Role } from './state.ts';
-import { chain, client } from '../src/v3/chain.ts';
+import {
+  chain,
+  client,
+  organizationId,
+  organizationScope,
+} from '../src/v3/chain.ts';
 import { SOURCE_REGISTRY } from '../src/v3/sources.ts';
 import { backtest, syntheticCases } from '../src/v3/model.ts';
 import {
@@ -48,6 +62,10 @@ export async function buildApp(
     bodyLimit: 3 * 1024 * 1024,
     requestTimeout: 20000,
   });
+  const fixedOrganization = organizationId();
+  app.addHook('onRequest', (_request, _reply, done) =>
+    organizationScope.run(fixedOrganization, done),
+  );
   const sessions = new Map<string, { role: Role; expires: number }>();
   const tickets = new Map<
     string,
@@ -94,7 +112,10 @@ export async function buildApp(
       );
   });
   app.setErrorHandler((error, _req, reply) => {
-    const e = error as Error & { statusCode?: number; validation?: unknown };
+    const e = error as Error & {
+      statusCode?: number;
+      validation?: unknown;
+    };
     reply.code(e.statusCode ?? 400).send({
       error: e.validation
         ? 'Invalid request'
@@ -107,7 +128,12 @@ export async function buildApp(
     properties: Record<string, unknown>,
     required = Object.keys(properties),
   ) => ({
-    body: { type: 'object', additionalProperties: false, required, properties },
+    body: {
+      type: 'object',
+      additionalProperties: false,
+      required,
+      properties,
+    },
   });
   const str = (maxLength = 2000) => ({
     type: 'string',
@@ -218,6 +244,133 @@ export async function buildApp(
       }),
   );
 
+  app.post<{ Body: AutomaticInput }>(
+    '/api/v3/automatic/preview',
+    {
+      schema: schema({
+        incident: str(60),
+        requested: str(12),
+        capacity: str(12),
+        external: str(12),
+      }),
+    },
+    async (req) => automaticPreview(auth(req), req.body),
+  );
+  app.post<{ Body: AutomaticSubmission }>(
+    '/api/v3/automatic/submit',
+    {
+      schema: schema({
+        incident: str(60),
+        requested: str(12),
+        capacity: str(12),
+        external: str(12),
+        explanation: str(2000),
+        requestId: str(64),
+      }),
+    },
+    async (req) =>
+      db.transaction(async (s, audit) => {
+        const role = auth(req),
+          result = await automaticSubmit(s, role, req.body);
+        await audit(role.id, 'automatic-submit', result.application);
+        return result;
+      }),
+  );
+  app.post<{ Body: { application: string } }>(
+    '/api/v3/automatic/reserve',
+    {
+      schema: schema({ application: str(64) }),
+    },
+    async (req) =>
+      db.transaction(async (s, audit) => {
+        const role = auth(req),
+          result = await automaticReserve(s, role, req.body.application);
+        await audit(role.id, 'automatic-reserve', req.body.application);
+        return result;
+      }),
+  );
+  app.post('/api/v3/automatic/claim', async (_req, reply) =>
+    reply.code(410).send({
+      error:
+        'Use automatic/submit, automatic/reserve, then reservations/:id with action claim. Applications never transfer money.',
+    }),
+  );
+  app.get('/api/v3/workflow', async (req) => {
+    const role = auth(req);
+    requireRole(role, 'ngo');
+    return workflowCases(await db.read(), role);
+  });
+  app.post<{ Params: { id: string }; Body: ApprovalBundle }>(
+    '/api/v3/evidence/:id/approvals/import',
+    async (req) => {
+      const role = auth(req);
+      requireRole(role, 'ngo');
+      return db.transaction(async (s, audit) => {
+        const review = s.reviews.find(
+          (r) =>
+            r.id === req.body.target && r.evidenceId === Number(req.params.id),
+        );
+        must(review, 'Approval belongs to another evidence case', 403);
+        await authorizeApproval(s, req.body.purpose, req.body.target, role);
+        const result = await importApproval(s, req.body, role);
+        await audit(role.id, 'evidence-approval-import', req.body.target);
+        return result;
+      });
+    },
+  );
+  // NGO prepares a handoff, never a reviewer decision or signature.
+  app.post<{ Params: { id: string } }>(
+    '/api/v3/evidence/:id/handoff',
+    async (req) => {
+      const role = auth(req);
+      requireRole(role, 'ngo');
+      const e = (await chainEvidence()).find(
+        (x) => x.id === Number(req.params.id),
+      );
+      must(e, 'Evidence missing', 404);
+      own(role, e.ngo);
+      return db.transaction(async (s) => {
+        must(
+          e.status === 0 || e.status === 3,
+          'Receipt handoff requires pending or requested evidence',
+        );
+        const pending = s.reviews.find(
+          (r) =>
+            r.evidenceId === e.id &&
+            r.kind === 'receipt' &&
+            r.external &&
+            !r.tx &&
+            !r.superseded &&
+            e.status === r.binding?.status,
+        );
+        const manifest = commitment(
+          s.documents
+            .filter(
+              (d) =>
+                d.evidenceId === e.id &&
+                d.uploaded &&
+                d.category !== 'external-review',
+            )
+            .map((d) => ({ id: d.id, digest: d.digest, salt: d.salt })),
+        );
+        if (
+          pending &&
+          pending.manifest === manifest &&
+          (await now()) - pending.receivedAt <= 3600
+        )
+          return exportApproval(s, 'RECEIPT', pending.id);
+        const review = await prepareExternalReview(s, {
+          kind: 'receipt',
+          evidenceId: e.id,
+          reason:
+            'NGO requests external receipt verification; independent document and conflict checks required.',
+          decision: 0,
+          days: 0,
+        });
+        return exportApproval(s, 'RECEIPT', review.id);
+      });
+    },
+  );
   app.get('/api/v3/health', async () => ({
     local: true,
     simulation: true,
@@ -241,7 +394,10 @@ export async function buildApp(
       must(role, 'Unknown role');
       requireRole(role, 'ngo');
       const token = randomBytes(32).toString('hex');
-      sessions.set(digest(token), { role, expires: Date.now() + 8 * 3600000 });
+      sessions.set(digest(token), {
+        role,
+        expires: Date.now() + 8 * 3600000,
+      });
       reply.header(
         'Set-Cookie',
         `v3_session=${token}; HttpOnly; SameSite=Strict; Path=/api/v3; Max-Age=28800`,
@@ -399,19 +555,30 @@ export async function buildApp(
         })),
       reports: s.reports.filter((r) => isOwn(r.ngo)),
       blocked: role.ngo ? await c.read('isBlocked', [role.ngo]) : false,
-      governance: s.apps
-        .filter(
-          (a) => a.chainId && a.status === 'reviewed' && a.ngo !== role.ngo,
+      governance: (
+        await Promise.all(
+          s.apps
+            .filter((a) => a.chainId && a.ngo !== role.ngo)
+            .map(async (a) => {
+              const value = (await c.read('applications', [
+                BigInt(a.chainId!),
+              ])) as unknown[];
+              const bit = Number(await c.read('ngoBit', [role.ngo]));
+              return value[9] &&
+                !value[11] &&
+                time <= Number(value[6]) + 72 * 3600 &&
+                (Number(value[7]) & bit) !== 0 &&
+                (Number(value[8]) & bit) === 0
+                ? {
+                    id: a.id,
+                    incident: a.incident,
+                    ngo: a.ngo,
+                    change: a.change || a.explanation,
+                  }
+                : null;
+            }),
         )
-        .map(({ id, chainId, incident, ngo, version, change, expires }) => ({
-          id,
-          chainId,
-          incident,
-          ngo,
-          version,
-          change,
-          expires,
-        })),
+      ).filter((x) => x !== null),
       backtest: role.kind === 'data' ? backtest(syntheticCases) : undefined,
     };
   });
@@ -581,7 +748,9 @@ export async function buildApp(
   );
   app.post<{ Params: { id: string }; Body: { action: string } }>(
     '/api/v3/applications/:id',
-    { schema: schema({ action: { enum: ['approve', 'vote', 'expire'] } }) },
+    {
+      schema: schema({ action: { enum: ['approve', 'vote', 'expire'] } }),
+    },
     async (req) => {
       const role = auth(req);
       return db.transaction(async (s, audit) => {
@@ -606,7 +775,7 @@ export async function buildApp(
           }
         }
         await audit(role.id, req.body.action, req.params.id);
-        return out;
+        return typeof out === 'string' ? { tx: out } : out;
       });
     },
   );
@@ -653,6 +822,8 @@ export async function buildApp(
       own(role, r.ngo);
       return db.transaction(async (s, audit) => {
         const c = await chain();
+        const current = (await reservations()).find((x) => x.id === r.id)!;
+        if (current.settled) return { settled: true };
         const tx = await c.send(req.body.action, [BigInt(r.id)], role.index);
         const a = s.apps.find((a) => a.chainId === r.application);
         if (a) a.status = req.body.action === 'claim' ? 'paid' : 'expired';
@@ -767,7 +938,10 @@ export async function buildApp(
         expires: Date.now() + 60000,
         used: false,
       });
-      return { url: `/api/v3/objects/${d.id}?ticket=${token}`, expiresIn: 60 };
+      return {
+        url: `/api/v3/objects/${d.id}?ticket=${token}`,
+        expiresIn: 60,
+      };
     },
   );
   app.addContentTypeParser(

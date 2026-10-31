@@ -1,8 +1,19 @@
 import { uiText, type UIKey } from './copy.ts';
 import React, { useEffect, useRef, useState } from 'react';
 import { ViewNavigation } from '../view-navigation.tsx';
-import { catalog, languages, countries, translationStatus } from './i18n.ts';
-import { api, amount, formatters, UIContext, type Portal } from './context.tsx';
+import {
+  catalog,
+  languages,
+  countries,
+  translationStatus,
+} from './i18n.ts';
+import {
+  api,
+  amount,
+  formatters,
+  UIContext,
+  type Portal,
+} from './context.tsx';
 import type { Organization } from '../../src/v3/ui-types.ts';
 import { Dialog, ExternalIcon, GearIcon } from './components.tsx';
 import { HomePage } from './home.tsx';
@@ -25,7 +36,10 @@ export function resolveRoute(hash: string) {
     return { kind: 'organization', id: 'local-alliance' };
   if (raw.startsWith('/organizations/')) {
     try {
-      return { kind: 'organization', id: decodeURIComponent(raw.slice(15)) };
+      return {
+        kind: 'organization',
+        id: decodeURIComponent(raw.slice(15)),
+      };
     } catch {
       return { kind: 'missing' };
     }
@@ -33,7 +47,8 @@ export function resolveRoute(hash: string) {
   return { kind: 'missing' };
 }
 export function SharedFundApp() {
-  const ngoEntry = new URLSearchParams(location.search).get('ngo') === '1';
+  const ngoEntry =
+    new URLSearchParams(location.search).get('ngo') === '1';
   const publicHome = '/?v3=1#/home';
   const ngoHome = '/?v3=1&ngo=1#/ngo';
   const [sessionState, setSessionState] = useState<
@@ -61,6 +76,8 @@ export function SharedFundApp() {
     [error, setError] = useState(''),
     [message, setMessage] = useState(''),
     [donationAmount, setDonationAmount] = useState('25'),
+    [donationOrganization, setDonationOrganization] =
+      useState('local-alliance'),
     [pending, setPending] = useState<string[]>([]);
   const tr = (key: UIKey) => uiText(locale, key);
   const old = (key: keyof typeof catalog.en) =>
@@ -105,12 +122,16 @@ export function SharedFundApp() {
     ]);
     setRoles(roleData.roles);
     setPortal(p);
-    if (data.organizations[0]?.snapshot.status === 'confirmed') {
+    for (const organization of data.organizations.filter(
+      (o) => o.snapshot.status === 'confirmed',
+    )) {
       const confirmed = await api<{ items: { tx: string }[] }>(
-        '/organizations/' + data.organizations[0].id + '/test-support',
+        '/organizations/' + organization.id + '/test-support',
       );
       setPending((previous) =>
-        previous.filter((tx) => !confirmed.items.some((x) => x.tx === tx)),
+        previous.filter(
+          (tx) => !confirmed.items.some((x) => x.tx === tx),
+        ),
       );
     }
   }
@@ -201,7 +222,10 @@ export function SharedFundApp() {
       ethereum?: {
         request: (p: { method: string }) => Promise<string[]>;
         on?: (event: string, fn: (a: string[]) => void) => void;
-        removeListener?: (event: string, fn: (a: string[]) => void) => void;
+        removeListener?: (
+          event: string,
+          fn: (a: string[]) => void,
+        ) => void;
       };
     }
   ).ethereum;
@@ -271,7 +295,9 @@ export function SharedFundApp() {
                 className="primary"
                 disabled={!!portal}
                 onClick={() => setDonation(true)}
-                title={portal ? tr('end_the_ngo_session_first') : undefined}
+                title={
+                  portal ? tr('end_the_ngo_session_first') : undefined
+                }
               >
                 {tr('test_donation')}
               </button>
@@ -361,7 +387,10 @@ export function SharedFundApp() {
           </a>
         </footer>
         {settings && (
-          <Dialog title={tr('settings')} onClose={() => setSettings(false)}>
+          <Dialog
+            title={tr('settings')}
+            onClose={() => setSettings(false)}
+          >
             <div className="preferences-grid">
               {[
                 [
@@ -377,9 +406,9 @@ export function SharedFundApp() {
                   countries.map((value) => ({
                     value,
                     label:
-                      new Intl.DisplayNames([locale], { type: 'region' }).of(
-                        value,
-                      ) ?? value,
+                      new Intl.DisplayNames([locale], {
+                        type: 'region',
+                      }).of(value) ?? value,
                   })),
                 ],
                 [
@@ -466,7 +495,9 @@ export function SharedFundApp() {
                     throw new Error(tr('no_browser_wallet_installed'));
                   setWallet(
                     (
-                      await ethereum.request({ method: 'eth_requestAccounts' })
+                      await ethereum.request({
+                        method: 'eth_requestAccounts',
+                      })
                     )[0] ?? '',
                   );
                 })
@@ -490,15 +521,34 @@ export function SharedFundApp() {
               onSubmit={(e) => {
                 e.preventDefault();
                 void run(async () => {
-                  const r = await api<{ tx: string }>('/donations', 'POST', {
-                    amount: amount(donationAmount),
-                  });
+                  const r = await api<{ tx: string }>(
+                    '/donations',
+                    'POST',
+                    {
+                      amount: amount(donationAmount),
+                    },
+                    donationOrganization,
+                  );
                   setPending((p) => [...p, r.tx]);
                   setDonation(false);
                 });
               }}
             >
-              <p>{organizations[0]?.name}</p>
+              <label>
+                {locale === 'de' ? 'Bündnis' : 'Alliance'}
+                <select
+                  value={donationOrganization}
+                  onChange={(e) =>
+                    setDonationOrganization(e.target.value)
+                  }
+                >
+                  {organizations.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <p>{tr('shared_test_donor_account_up_to_1')}</p>
               <code>{organizations[0]?.support.donor}</code>
               <label>

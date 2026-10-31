@@ -1,5 +1,9 @@
-import { type Area, type Coverage, type Hazard } from '../src/v3/domain.ts';
-import { account } from '../src/v3/chain.ts';
+import {
+  type Area,
+  type Coverage,
+  type Hazard,
+} from '../src/v3/domain.ts';
+import { account, organizationId } from '../src/v3/chain.ts';
 export interface Role {
   id: string;
   kind: 'ngo' | 'data' | 'evidence' | 'appeal';
@@ -44,6 +48,7 @@ export interface Incident {
   synthetic: true;
 }
 export interface App {
+  automatic?: boolean;
   id: string;
   version: number;
   ngo: string;
@@ -64,7 +69,12 @@ export interface App {
   chainId?: number;
   tx?: string;
   status:
-    'submitted' | 'reviewed' | 'reserved' | 'paid' | 'expired' | 'rejected';
+    | 'submitted'
+    | 'reviewed'
+    | 'reserved'
+    | 'paid'
+    | 'expired'
+    | 'rejected';
 }
 export interface Doc {
   category?: 'expenditure-evidence' | 'external-review';
@@ -135,7 +145,12 @@ export interface State {
   incidents: Incident[];
   coverage: Coverage[];
   conflicts: { roleId: string; target: string; reason: string }[];
-  interim: { evidenceId: number; ngo: string; text: string; at: number }[];
+  interim: {
+    evidenceId: number;
+    ngo: string;
+    text: string;
+    at: number;
+  }[];
   coverageDecisions: {
     id: string;
     areaId: string;
@@ -153,11 +168,33 @@ export interface State {
   indexer: { block: string; hash: string; status: string };
 }
 export function seed(): State {
+  const community = organizationId() === 'community-alliance';
+  const localRoles = roles.map((r) => ({
+    ...r,
+    ...(community
+      ? {
+          id: 'community-' + r.id,
+          index: r.index + 13,
+          ...(r.ngo ? { ngo: account(r.index + 13).address } : {}),
+          name:
+            r.kind === 'ngo'
+              ? ['Community Rescue', 'Mobile Care', 'Safe Haven'][
+                  r.index - 1
+                ]!
+              : r.name,
+        }
+      : {}),
+  }));
   return {
     schema: 1,
     registryVersion: 1,
-    alliance: { id: 'local-alliance', name: 'DisasterDAO Relief Alliance' },
-    roles,
+    alliance: {
+      id: organizationId(),
+      name: community
+        ? 'Community Response Alliance'
+        : 'DisasterDAO Relief Alliance',
+    },
+    roles: localRoles,
     areas: [
       {
         id: 'turkiye',
@@ -184,7 +221,7 @@ export function seed(): State {
         hazards: ['storm', 'flood', 'health'],
       },
     ],
-    packages: roles
+    packages: localRoles
       .filter((r) => r.kind === 'ngo')
       .flatMap((r, sector) =>
         ['turkiye', 'philippines', 'mozambique'].map((areaId) => ({
@@ -215,6 +252,15 @@ export function seed(): State {
         areaId: 'philippines',
         people: [1200, 2200],
         features: [100, 200, 0.6, 0.5, 1],
+        synthetic: true,
+      },
+      {
+        id: 'demo-flood',
+        name: 'Synthetic flood response',
+        hazard: 'flood',
+        areaId: 'mozambique',
+        people: [800, 1500],
+        features: [2, 100, 0.4, 0.4, 1],
         synthetic: true,
       },
       {
