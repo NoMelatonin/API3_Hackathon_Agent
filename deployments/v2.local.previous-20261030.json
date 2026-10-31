@@ -1,0 +1,53 @@
+{
+  "version": 2,
+  "chainId": 31337,
+  "fund": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+  "token": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "ngos": [
+    "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+  ],
+  "committee": [
+    "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+    "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+    "0x976EA74026E726554dB657fA54763abd0C3a0aa9"
+  ],
+  "deployedBlock": "2",
+  "campaigns": [
+    {
+      "airnode": "0x5aF744115e2577513D878D4263Db73b3E77E7630",
+      "requestHash": "0x226b958e9cea51240281d38535b7a0661ed95b7a21f978a122bf442ca7b8522c",
+      "threshold": "7000000",
+      "cap": "8000000",
+      "minimum": "500000000",
+      "maximum": "2000000000",
+      "oracleEnabled": true
+    },
+    {
+      "airnode": "0x84A69892825178Fb1602fb78412E21728efee6a6",
+      "requestHash": "0x45400127cada55f95cd33e3e600b8c6f89c12961e6b66ed5a8cef01bc903a6ea",
+      "threshold": "34000000",
+      "cap": "64000000",
+      "minimum": "500000000",
+      "maximum": "2000000000",
+      "oracleEnabled": true
+    },
+    {
+      "airnode": "0x94df063Cd4D240075c9DBc2494e9e2787A7bB864",
+      "requestHash": "0x3d637c27f6885551b414c6a136061169cbd33f30079c28e41b90280bdf320d3b",
+      "threshold": "100000000",
+      "cap": "300000000",
+      "minimum": "500000000",
+      "maximum": "2000000000",
+      "oracleEnabled": false
+    }
+  ],
+  "transactions": {
+    "token": "0x2d7fbe884f8499cdd85fcd0788f2aa1d0e125b8a0734bd1862b7bf04ba8366e8",
+    "fund": "0xa9cafaeda6d4d557980c8b74fc62bf1cdab4f21c60bb30896d6cdb78eba637ed",
+    "funding": "0x7f3fcb594ca93ca3eac811fb22d8e6fe04fe66d6864b94afe425f28a0fea5051",
+    "activation": "0xe45bd6face39947cb5dd5b7fcb52173620d81b55de3f8868d7f9662dc20853a1"
+  }
+}

@@ -53,7 +53,8 @@ try {
     await page.waitForTimeout(hold);
   }
   async function confirmed() { await page.getByRole('status').filter({ hasText: 'On-chain bestätigt' }).waitFor({ timeout: 15000 }); }
-  await page.goto('http://127.0.0.1:5173/?local=1');
+  // The recorded controls and deployment belong to V1; select it explicitly.
+  await page.goto('http://127.0.0.1:5173/?local=1&legacy=1');
   await page.getByRole('status').filter({ hasText: 'Fonds bereit' }).waitFor();
   await caption('DisasterDAO · Gemeinsame Soforthilfe', 'Lokaler Funktionsmitschnitt: echte AirnodeHub-Signaturen, historische Chain-Uhr, fiktive NGOs. Testnet-Nachweise am Ende.', 6500);
   await page.locator('.columns').scrollIntoViewIfNeeded();
@@ -94,8 +95,8 @@ try {
   await page.getByRole('button', { name: '1.000 dUSD freigeben' }).click(); await confirmed();
   await page.locator('.history').scrollIntoViewIfNeeded();
   await caption('Dasselbe Budget. Kein zweiter Anspruch.', 'Oracle- und Notfallzahlung verbrauchen denselben einmaligen Anspruch. Herkunft und Entscheidungsgrund bleiben sichtbar.', 5000);
-  // This final scene reads the actual Base Sepolia deployment; no public-chain transaction is signed by this recorder.
-  await page.goto('http://127.0.0.1:5173/');
+  // This final scene reads the actual V1 Base Sepolia deployment; no public-chain transaction is signed by this recorder.
+  await page.goto('http://127.0.0.1:5173/?legacy=1');
   await page.getByRole('status').filter({ hasText: 'Fonds bereit' }).waitFor({ timeout: 25000 });
   await caption('Auf Base Sepolia tatsächlich bestätigt', 'Fonds 0x8b1c…7257: echte Oracle-Auszahlung und echte 2/3-Notfallzahlung. Die Transaktionslinks liegen im Repository.', 6000);
   await page.locator('.history').scrollIntoViewIfNeeded();
