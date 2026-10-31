@@ -67,6 +67,10 @@ export async function tick(
           ],
         );
       }
+      await connection.query(
+        'INSERT INTO v3_chain_checkpoint VALUES(1,$1,$2) ON CONFLICT(id) DO UPDATE SET block_number=$1,block_hash=$2',
+        [String(finalized), block.hash],
+      );
       await connection.query('COMMIT');
     } catch (e) {
       await connection.query('ROLLBACK');

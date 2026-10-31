@@ -229,17 +229,14 @@ export async function approveApplication(s: State, role: Role, id: string) {
   }
   return a;
 }
-export async function prepareRound(s: State, role: Role) {
-  requireRole(role, 'data');
+export async function allocationSnapshot(s: State, draft?: App) {
   const c = await chain(),
-    time = await now();
-  const balance = await c.balance(),
-    reserved = (await c.read('totalReserved')) as bigint;
-  const nonce = Number(await c.read('roundNonce'));
-  const pending = s.rounds.find(
-    (r) => r.nonce === nonce && !r.tx && r.expires > time,
-  );
-  if (pending) return pending;
+    block = await client.getBlock({ blockTag: 'latest' });
+  const time = Number(block.timestamp),
+    blockNumber = block.number;
+  const balance = await c.balance(blockNumber),
+    reserved = (await c.read('totalReserved', [], blockNumber)) as bigint;
+  const nonce = Number(await c.read('roundNonce', [], blockNumber));
   const states = s.areas.map((a) => ({
     area: a.id,
     situation: situation(a, s.coverage, time),
@@ -252,25 +249,39 @@ export async function prepareRound(s: State, role: Role) {
   // All registered NGO operating packages, including competitors with no application.
   for (const ngo of s.roles.filter((r) => r.kind === 'ngo'))
     for (const incident of s.incidents) {
-      const app = s.apps.find(
-        (a) =>
-          a.ngo === ngo.ngo &&
-          a.incident === incident.id &&
-          a.status === 'reviewed',
-      );
+      const app =
+        (draft && draft.ngo === ngo.ngo && draft.incident === incident.id
+          ? draft
+          : undefined) ??
+        s.apps.find(
+          (a) =>
+            a.ngo === ngo.ngo &&
+            a.incident === incident.id &&
+            a.status === 'reviewed',
+        );
       const max = BigInt(
         app?.maximum ??
           model(s, incident.id, time, ngo.ngo).demoMaximum ??
           POLICY.cap,
       );
-      const key = await c.read('keyFor', [ngo.ngo, hash(incident.id)]);
-      const paid = (await c.read('paidFor', [key])) as bigint;
-      const committed = (await c.read('reservedFor', [key])) as bigint;
+      const key = await c.read(
+        'keyFor',
+        [ngo.ngo, hash(incident.id)],
+        blockNumber,
+      );
+      const paid = (await c.read('paidFor', [key], blockNumber)) as bigint;
+      const committed = (await c.read(
+        'reservedFor',
+        [key],
+        blockNumber,
+      )) as bigint;
       let authorized = true;
       if (app?.chainId) {
-        const onchain = (await c.read('applications', [
-          BigInt(app.chainId),
-        ])) as unknown[];
+        const onchain = (await c.read(
+          'applications',
+          [BigInt(app.chainId)],
+          blockNumber,
+        )) as unknown[];
         authorized = Boolean(onchain[10]);
       }
       participants.push({
@@ -287,7 +298,7 @@ export async function prepareRound(s: State, role: Role) {
         paid,
         reserved: committed,
         external: BigInt(app?.external ?? 0),
-        blocked: (await c.read('isBlocked', [ngo.ngo])) as boolean,
+        blocked: (await c.read('isBlocked', [ngo.ngo], blockNumber)) as boolean,
       });
     }
   const result = allocate(
@@ -297,6 +308,35 @@ export async function prepareRound(s: State, role: Role) {
     uncertain,
     competing,
   );
+  return {
+    result,
+    states,
+    participants,
+    balance,
+    reserved,
+    time,
+    uncertain,
+    competing,
+    nonce,
+  };
+}
+export async function prepareRound(s: State, role: Role) {
+  requireRole(role, 'data');
+  const {
+    result,
+    states,
+    participants,
+    uncertain,
+    competing,
+    balance,
+    reserved,
+    time,
+    nonce,
+  } = await allocationSnapshot(s);
+  const pending = s.rounds.find(
+    (r) => r.nonce === nonce && !r.tx && r.expires > time,
+  );
+  if (pending) return pending;
   const grants = result.rows
     .filter((r) => !r.provisional && BigInt(r.amount) > 0n)
     .map((r) => {
@@ -383,12 +423,16 @@ export async function approveRound(s: State, role: Role, id: string) {
   }
   return r;
 }
-export async function chainEvidence() {
+export async function chainEvidence(blockNumber?: bigint) {
   const c = await chain(),
-    count = Number(await c.read('evidenceCount'));
+    count = Number(await c.read('evidenceCount', [], blockNumber));
   const list = [];
   for (let id = 1; id <= count; id++) {
-    const x = (await c.read('evidence', [BigInt(id)])) as readonly unknown[];
+    const x = (await c.read(
+      'evidence',
+      [BigInt(id)],
+      blockNumber,
+    )) as readonly unknown[];
     list.push({
       id,
       ngo: String(x[0]),
@@ -448,7 +492,10 @@ export async function proposeReview(
     manifest = e.manifest;
     if (input.kind === 'receipt') {
       const docs = s.documents.filter(
-        (d) => d.evidenceId === e.id && d.uploaded,
+        (d) =>
+          d.evidenceId === e.id &&
+          d.uploaded &&
+          d.category !== 'external-review',
       );
       must(docs.length > 0, 'Upload synthetic evidence first');
       manifest = commitment(
@@ -465,6 +512,7 @@ export async function proposeReview(
   const duplicate = s.reviews.find(
     (r) =>
       !r.tx &&
+      !r.superseded &&
       r.kind === input.kind &&
       r.evidenceId === input.evidenceId &&
       r.applicationId === input.applicationId,

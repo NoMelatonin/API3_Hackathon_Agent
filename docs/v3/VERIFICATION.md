@@ -41,3 +41,31 @@ Browser: alle Sprachressourcen tatsächlich gewählt, sichtbare Entwurfsmarkieru
 - Vite meldet weiterhin den vorhandenen browserfremden optionalen `node:worker_threads`-Import aus einer Legacy-Abhängigkeit. Der Build und die geprüften Browserabläufe bestehen.
 
 Reproduktionsbefehle und Ablauf: [LOCAL.md](LOCAL.md). Integrations-/Browsertests nicht gleichzeitig mit manuellen Transaktionen ausführen.
+
+## UI-Weiterentwicklung — 31.10.2026
+
+Ausgeführt auf `disasterdao-shared-fund-ui-improvements`, Basis `59aa382`. Die historische Abnahme oben bleibt als solche erhalten. Aktuelle Routen, APIs und der externe Prüfablauf stehen in [UI.md](UI.md).
+
+| Prüfung | Ergebnis |
+|---|---|
+| `npm test` | 11 Testdateien ohne Fehler; neuer Testkonto-/Signatur-/Browserrollen-Test und ergänzte Sprachressourcenprüfung enthalten |
+| `npm run build` | Backend-/Frontend-Typechecks und Produktionsbuild bestanden |
+| Solidity 0.8.37 / Forge | 65 Tests bestanden; einschließlich 256 Invariantenfolgen mit 128.000 Aufrufen |
+| `V3_INTEGRATION=1 node --test --test-concurrency=1 server/app.test.ts` | Vollständiger isolierter Ablauf bestanden: echte PostgreSQL-, S3- und lokale Contract-Aufrufe |
+| Produktionsbuild / Chromium | 3 Browserfälle bestanden: getrennte Einstiege und alte Links, 39 Sprachoptionen, RTL, Hell/Dunkel, Fokus, Bildwechsel, Testspende und NGO-Vorschau/Antrag |
+| Sichtprüfung | Screenshots bei 375/768/1440 px in Hell/Dunkel; zusätzlich berechnete Hintergrundfarbe, Headerlayout und Icongröße geprüft |
+| `git diff --check` | bestanden |
+
+Der Integrationstest prüft zwei externe Signaturen einschließlich tatsächlicher CLI-Signierung, falsche Domain/Chain/Payload/Zweck, doppelte Signer, fremde NGO-Zugriffe, manipulierte Dokumentbindung, abgelaufenen Eingang, Einmallinks, getrennte Eingangs-/Verwendungsentscheidung, Veröffentlichung, vollständige Fondsdaten und Entfernung verwaister Einzahlungen nach Reorg. Ein erneuter Import darf einen bereits ausgezahlten Antrag nicht auf „geprüft“ zurücksetzen. Alte interne Prüfdrafts werden bei externer Vorbereitung archiviert und ohne übernommene Stimmen ersetzt.
+
+Die Sichtprüfung fand eine fehlerhafte Zusammenfassung bedingter CSS-Imports im Produktionsbundler. Explizite Importzweige beheben dies; Browserprüfungen kontrollieren jetzt tatsächliche Styles. Der danach sichtbar gewordene blockierende Google-Fonts-Abruf der V1-Demo wurde durch lokale Dateien derselben Schriftfamilien mit SIL-OFL-Lizenzen ersetzt. V1/V2-Aufbau und Contracts bleiben erhalten.
+
+Reproduktion der Browserprüfung mit laufendem Backend und `vite preview --host 127.0.0.1 --port 4173`:
+
+```sh
+V3_UI_URL=http://127.0.0.1:4173 CHROME_PATH=/usr/bin/chromium npm run v3:test:ui
+```
+
+In dieser Cloud-Umgebung wurde Forge direkt über `node_modules/@foundry-rs/forge-linux-amd64/bin/forge test --use /tmp/disasterdao-solc` aufgerufen. Die lokal bereitgestellte Compilerdatei ist Solidity 0.8.37; der standardmäßige Installationspfad war schreibgeschützt. Es wurden keine Contract-Quellen geändert.
+
+Die Browserfälle prüfen bei privaten Quellpfaden entweder eine Zugriffsverweigerung oder die reine HTML-Fallbackseite des statischen Previewservers; private Dateien werden nicht ausgeliefert. Die Vite-Dateisperren bleiben konfiguriert. Legacy-Transaktionsabläufe auf neuen V1/V2-Deployments wurden nicht ausgeführt. Neue Oberflächentexte sind DE/EN-Ausgangstexte; andere Sprachen verwenden sichtbar gekennzeichnete englische Ausgangstexte. Die Abnahme behauptet keine vollständige WCAG-Zertifizierung oder produktive Identitäts-/Prüferinfrastruktur.

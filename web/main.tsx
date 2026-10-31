@@ -6,11 +6,11 @@ const v3 =
   params.has('v3') ||
   (!params.has('local') && !params.has('legacy') && !params.has('v2'));
 const legacy = new URLSearchParams(location.search).get('legacy') === '1';
-await (v3
-  ? import('./v3/style.css')
-  : legacy
-    ? import('./legacy.css')
-    : import('./style.css'));
+// Keep each stylesheet import in its own branch. A shared conditional import
+// is coalesced by the production bundler and can preload the V2 CSS for V3.
+if (v3) await import('./v3/style.css');
+else if (legacy) await import('./legacy.css');
+else await import('./style.css');
 if (!v3) await import('./theme-legacy.css');
 const App = v3
   ? (await import('./v3/app.tsx')).SharedFundApp

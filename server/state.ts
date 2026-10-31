@@ -67,6 +67,7 @@ export interface App {
     'submitted' | 'reviewed' | 'reserved' | 'paid' | 'expired' | 'rejected';
 }
 export interface Doc {
+  category?: 'expenditure-evidence' | 'external-review';
   id: string;
   evidenceId: number;
   ngo: string;
@@ -79,6 +80,10 @@ export interface Doc {
   createdAt: number;
 }
 export interface Review {
+  superseded?: boolean;
+  documentId?: string;
+  binding?: { manifest: string; status: number; due: number };
+  external?: boolean;
   id: string;
   kind: 'receipt' | 'review' | 'extend' | 'resolve' | 'followup';
   evidenceId: number;

@@ -27,7 +27,7 @@ export class Database<T> {
   }
   async init(seed: T) {
     await this.pool.query(
-      `CREATE TABLE IF NOT EXISTS v3_state(id integer PRIMARY KEY CHECK(id=1), body jsonb NOT NULL); CREATE TABLE IF NOT EXISTS v3_audit(id bigserial PRIMARY KEY, at timestamptz NOT NULL DEFAULT now(), actor text NOT NULL, action text NOT NULL, target text NOT NULL); CREATE TABLE IF NOT EXISTS v3_chain_log(block_number bigint NOT NULL, block_hash text NOT NULL, tx text NOT NULL, log_index integer NOT NULL, body jsonb NOT NULL, PRIMARY KEY(tx,log_index));`,
+      `CREATE TABLE IF NOT EXISTS v3_state(id integer PRIMARY KEY CHECK(id=1), body jsonb NOT NULL); CREATE TABLE IF NOT EXISTS v3_audit(id bigserial PRIMARY KEY, at timestamptz NOT NULL DEFAULT now(), actor text NOT NULL, action text NOT NULL, target text NOT NULL); CREATE TABLE IF NOT EXISTS v3_chain_checkpoint(id integer PRIMARY KEY CHECK(id=1), block_number bigint NOT NULL, block_hash text NOT NULL); CREATE TABLE IF NOT EXISTS v3_chain_log(block_number bigint NOT NULL, block_hash text NOT NULL, tx text NOT NULL, log_index integer NOT NULL, body jsonb NOT NULL, PRIMARY KEY(tx,log_index));`,
     );
     await this.pool.query(
       'INSERT INTO v3_state VALUES(1,$1) ON CONFLICT DO NOTHING',

@@ -34,3 +34,17 @@ test('39 complete catalogs, draft labeling, 51 countries, RTL-compatible Intl an
     '2026-10-30',
   );
 });
+
+import { copy, uiCatalog } from '../../web/v3/copy.ts';
+test('new UI text has complete DE/EN source and explicitly uses English source for other locales', () => {
+  for (const [locale] of languages) {
+    assert.deepEqual(Object.keys(uiCatalog[locale]!), Object.keys(copy));
+    assert.ok(
+      Object.values(uiCatalog[locale]!).every(
+        (value) => value.trim().length > 0,
+      ),
+    );
+  }
+  assert.deepEqual(uiCatalog.ar, uiCatalog.en);
+  assert.notDeepEqual(uiCatalog.de, uiCatalog.en);
+});

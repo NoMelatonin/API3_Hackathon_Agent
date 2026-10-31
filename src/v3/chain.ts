@@ -145,12 +145,14 @@ export async function chain() {
     );
   return {
     config: c.config,
-    read: async (name: string, args: unknown[] = []) =>
+    fundAbi: c.fundAbi,
+    read: async (name: string, args: unknown[] = [], blockNumber?: bigint) =>
       client.readContract({
         address: c.config.fund,
         abi: c.fundAbi,
         functionName: name,
         args,
+        blockNumber,
       }),
     send: async (name: string, args: unknown[] = [], index = 0) => {
       const tx = await wallet(index).writeContract({
@@ -164,12 +166,13 @@ export async function chain() {
         throw new Error(`V3 transaction reverted: ${name}`);
       return tx;
     },
-    balance: async () =>
+    balance: async (blockNumber?: bigint) =>
       client.readContract({
         address: c.config.token,
         abi: c.tokenAbi,
         functionName: 'balanceOf',
         args: [c.config.fund],
+        blockNumber,
       }) as Promise<bigint>,
     sign: async (purpose: string, payload: Hex, indices: number[]) => {
       const digest = (await client.readContract({

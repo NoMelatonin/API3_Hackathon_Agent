@@ -25,3 +25,7 @@ Source documentation consulted during implementation: [Fastify validation](https
 
 ## Delivered local implementation
 P0–P6 are implemented and verified for the explicitly simulated local scope. See [LOCAL.md](LOCAL.md) for operating instructions and [VERIFICATION.md](VERIFICATION.md) for executed checks and material gaps. P1 established provenance/coverage mechanics and explicitly did **not** establish a real comparable expenditure corpus. The country/language catalogs have 51 countries and 39 languages (69 UI keys); only DE/EN are maintained source texts. PostgreSQL uses a locked JSONB aggregate with separate audit/log tables for the fixed local registry. Private storage is S3-compatible RustFS (pinned image), encrypted before upload. No production-readiness or external-source integration is inferred from local acceptance.
+
+## UI evolution
+
+The `disasterdao-shared-fund-ui-improvements` branch adds separate discovery, organization and NGO surfaces and external signature imports. Browser reviewer sessions are disabled; quorum requirements remain unchanged. See [UI.md](UI.md) for current routes, APIs, data boundaries and operator commands. Earlier portal descriptions above describe the original delivered baseline.

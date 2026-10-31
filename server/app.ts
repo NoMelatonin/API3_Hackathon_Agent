@@ -1,3 +1,11 @@
+import { organizationData, paginate } from './organizations.ts';
+import { previewApplication } from './preview.ts';
+import {
+  authorizeApproval,
+  exportApproval,
+  importApproval,
+} from './external.ts';
+import type { ApprovalBundle } from '../src/v3/ui-types.ts';
 import Fastify from 'fastify';
 import { situation } from '../src/v3/domain.ts';
 import { reviewTarget } from '../src/v3/deadlines.ts';
@@ -107,6 +115,109 @@ export async function buildApp(
     maxLength,
   });
   const int = { type: 'integer', minimum: 0, maximum: 1_000_000 };
+
+  app.get('/api/v3/organizations', async () => ({
+    organizations: [(await organizationData(db)).organization],
+  }));
+  app.get<{ Params: { id: string } }>(
+    '/api/v3/organizations/:id',
+    async (req) => (await organizationData(db, req.params.id)).organization,
+  );
+  for (const kind of ['activity', 'test-support'] as const) {
+    app.get<{ Params: { id: string }; Querystring: { offset?: string } }>(
+      '/api/v3/organizations/:id/' + kind,
+      async (req) => {
+        const offset = Number(req.query.offset ?? 0);
+        must(Number.isSafeInteger(offset) && offset >= 0, 'Invalid offset');
+        const { organization: o, items } = await organizationData(
+          db,
+          req.params.id,
+        );
+        const filtered =
+          kind === 'test-support'
+            ? items.filter(
+                (x) =>
+                  x.kind === 'Deposited' &&
+                  x.actor?.toLowerCase() === o.support.donor.toLowerCase(),
+              )
+            : items;
+        return {
+          snapshot: o.snapshot,
+          ...paginate(filtered, offset),
+          ...(kind === 'test-support' ? o.support : {}),
+        };
+      },
+    );
+  }
+  app.post<{
+    Body: {
+      incident: string;
+      requested: string;
+      capacity: string;
+      external: string;
+    };
+  }>(
+    '/api/v3/applications/preview',
+    {
+      schema: schema({
+        incident: str(60),
+        requested: str(12),
+        capacity: str(12),
+        external: str(12),
+      }),
+    },
+    async (req) => previewApplication(await db.read(), auth(req), req.body),
+  );
+  app.post<{ Body: { purpose: string; target: string } }>(
+    '/api/v3/approvals/export',
+    {
+      schema: schema({ purpose: str(20), target: str(100) }),
+    },
+    async (req) => {
+      const s = await db.read();
+      await authorizeApproval(s, req.body.purpose, req.body.target, auth(req));
+      return exportApproval(s, req.body.purpose, req.body.target);
+    },
+  );
+  app.post<{ Body: ApprovalBundle }>(
+    '/api/v3/approvals/import',
+    {
+      schema: schema(
+        {
+          schema: { const: 1 },
+          purpose: str(20),
+          target: str(100),
+          chainId: { const: 31337 },
+          fund: str(42),
+          payload: str(66),
+          signatures: {
+            type: 'array',
+            minItems: 2,
+            maxItems: 3,
+            items: str(132),
+          },
+          context: { type: 'object' },
+        },
+        [
+          'schema',
+          'purpose',
+          'target',
+          'chainId',
+          'fund',
+          'payload',
+          'signatures',
+        ],
+      ),
+    },
+    async (req) =>
+      db.transaction(async (s, audit) => {
+        const role = auth(req);
+        const result = await importApproval(s, req.body, role);
+        await audit(role.id, 'external-approval-import', req.body.target);
+        return result;
+      }),
+  );
+
   app.get('/api/v3/health', async () => ({
     local: true,
     simulation: true,
@@ -114,11 +225,13 @@ export async function buildApp(
   }));
   app.get('/api/v3/roles', async () => ({
     simulation: true,
-    roles: (await db.read()).roles.map(({ id, kind, name }) => ({
-      id,
-      kind,
-      name,
-    })),
+    roles: (await db.read()).roles
+      .filter((r) => r.kind === 'ngo')
+      .map(({ id, kind, name }) => ({
+        id,
+        kind,
+        name,
+      })),
   }));
   app.post<{ Body: { role: string } }>(
     '/api/v3/session',
@@ -126,6 +239,7 @@ export async function buildApp(
     async (req, reply) => {
       const role = (await db.read()).roles.find((x) => x.id === req.body.role);
       must(role, 'Unknown role');
+      requireRole(role, 'ngo');
       const token = randomBytes(32).toString('hex');
       sessions.set(digest(token), { role, expires: Date.now() + 8 * 3600000 });
       reply.header(
@@ -217,6 +331,12 @@ export async function buildApp(
       c = await chain(),
       time = await now();
     const isOwn = (ngo: string) => role.kind !== 'ngo' || ngo === role.ngo;
+    const tip = await client.getBlockNumber({ cacheTime: 0 });
+    const finalized = tip > 2n ? tip - 2n : 0n;
+    const confirmedEvidence =
+      finalized >= BigInt(c.config.deployedBlock)
+        ? await chainEvidence(finalized)
+        : [];
     return {
       role,
       simulation: true,
@@ -228,13 +348,21 @@ export async function buildApp(
         ...model(s, i.id, time, role.ngo),
       })),
       interim: s.interim.filter((x) => isOwn(x.ngo)),
-      conflicts: s.conflicts,
+      conflicts: role.kind === 'ngo' ? [] : s.conflicts,
       coverageDecisions: role.kind === 'data' ? s.coverageDecisions : [],
       apps: s.apps.filter((x) => isOwn(x.ngo)),
       evidence: (await chainEvidence())
         .filter((x) => isOwn(x.ngo))
         .map((e) => ({
           ...e,
+          confirmed: confirmedEvidence.some(
+            (x) =>
+              x.id === e.id &&
+              x.status === e.status &&
+              x.manifest === e.manifest &&
+              x.due === e.due &&
+              x.responseDue === e.responseDue,
+          ),
           reviewTarget: s.reviews.findLast(
             (r) => r.kind === 'receipt' && r.evidenceId === e.id && r.tx,
           )?.receivedAt
@@ -247,10 +375,22 @@ export async function buildApp(
         })),
       reservations: (await reservations()).filter((x) => isOwn(x.ngo)),
       rounds: role.kind === 'data' ? s.rounds : [],
-      reviews: role.kind === 'ngo' ? [] : s.reviews,
+      reviews:
+        role.kind === 'ngo'
+          ? s.reviews.filter(
+              (r) =>
+                r.external &&
+                !r.superseded &&
+                (s.apps.some((a) => a.id === r.applicationId && isOwn(a.ngo)) ||
+                  s.documents.some(
+                    (d) => d.evidenceId === r.evidenceId && isOwn(d.ngo),
+                  )),
+            )
+          : s.reviews,
       documents: s.documents
         .filter((d) => isOwn(d.ngo) && role.kind !== 'data')
-        .map(({ id, evidenceId, name, mime, size, uploaded }) => ({
+        .map(({ id, evidenceId, name, mime, size, uploaded, category }) => ({
+          category: category ?? 'expenditure-evidence',
           id,
           evidenceId,
           name,
@@ -429,6 +569,11 @@ export async function buildApp(
     async (req) => {
       const role = auth(req);
       return db.transaction(async (s, audit) => {
+        const preview = await previewApplication(s, role, req.body);
+        must(
+          !preview.blocked && BigInt(preview.remaining) > 0n,
+          'No remaining claim or NGO blocked',
+        );
         const result = await submit(s, role, req.body);
         await audit(role.id, 'application-submit', result.id);
         return result;
@@ -524,19 +669,24 @@ export async function buildApp(
       mime: string;
       size: number;
       synthetic: boolean;
+      category?: 'expenditure-evidence' | 'external-review';
     };
   }>(
     '/api/v3/uploads',
     {
-      schema: schema({
-        evidenceId: int,
-        name: str(100),
-        mime: {
-          enum: ['text/plain', 'application/pdf', 'image/png', 'image/jpeg'],
+      schema: schema(
+        {
+          evidenceId: int,
+          name: str(100),
+          mime: {
+            enum: ['text/plain', 'application/pdf', 'image/png', 'image/jpeg'],
+          },
+          size: { type: 'integer', minimum: 1, maximum: 2 * 1024 * 1024 },
+          synthetic: { const: true },
+          category: { enum: ['expenditure-evidence', 'external-review'] },
         },
-        size: { type: 'integer', minimum: 1, maximum: 2 * 1024 * 1024 },
-        synthetic: { const: true },
-      }),
+        ['evidenceId', 'name', 'mime', 'size', 'synthetic'],
+      ),
     },
     async (req) => {
       const role = auth(req);
@@ -549,6 +699,7 @@ export async function buildApp(
       const doc = {
         id: randomUUID(),
         evidenceId: e.id,
+        category: req.body.category ?? 'expenditure-evidence',
         ngo: e.ngo,
         name: req.body.name,
         mime: req.body.mime,
@@ -809,6 +960,13 @@ export async function buildApp(
     '/api/v3/donations',
     { schema: schema({ amount: str(12) }) },
     async (req) => {
+      if (String(req.headers.cookie ?? '').includes('v3_session=')) {
+        auth(req);
+        throw new Rejected(
+          'Leave the NGO session before using the test donor',
+          403,
+        );
+      }
       must(
         /^\d+$/.test(req.body.amount) && BigInt(req.body.amount) > 0n,
         'Invalid amount',

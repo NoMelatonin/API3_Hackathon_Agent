@@ -1,15 +1,15 @@
 # DisasterDAO
 
-## V3: lokaler gemeinsamer Fonds
+## V3: lokaler gemeinsamer Fonds und getrennte Oberflächen
 
-Auf `feat/disasterdao-shared-fund`: gemeinsamer Fonds, 2/3-Prüferfreigaben, proportionale Förderrunden, kumulative Tranchen, Nachweisfristen, geschütztes NGO-/Prüferportal und öffentliche Übersicht. PostgreSQL und verschlüsselter privater S3-Speicher laufen lokal; 39 UI-Sprachen und System/Hell/Dunkel sind enthalten.
+Auf `disasterdao-shared-fund-ui-improvements`: getrennte Entdeckung, Organisationsdetail und NGO-Arbeitsbereich; gemeinsamer Fonds, externe 2/3-Signaturfreigaben, proportionale Förderrunden, kumulative Tranchen und private Nachweise. PostgreSQL und verschlüsselter privater S3-Speicher laufen lokal; 39 UI-Sprachen und System/Hell/Dunkel sind enthalten.
 
 ```sh
 npm ci
 npm run v3:start
 ```
 
-**http://127.0.0.1:5173/?v3=1** · [Start und vollständiger Ablauf](docs/v3/LOCAL.md) · [Prüfbericht und Grenzen](docs/v3/VERIFICATION.md).
+**http://127.0.0.1:5173/?v3=1#/home** · [Oberflächen und externe Freigaben](docs/v3/UI.md) · [Start und vollständiger Ablauf](docs/v3/LOCAL.md) · [Prüfbericht und Grenzen](docs/v3/VERIFICATION.md).
 
 Alle Rollen, Kostenbeispiele und Dokumente sind simuliert. Ein echtes vergleichbares 30-Tage-Ausgabenkorpus ist noch nicht belegt; keine automatische empirische Bedarfsfreigabe. V1/V2 und vorhandene Deployments bleiben erhalten. V2-Vorschau: `/?v2=1`; lokale V2 weiterhin `/?local=1`.
 
