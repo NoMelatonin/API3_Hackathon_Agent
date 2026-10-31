@@ -1,6 +1,51 @@
 // Maintained DE/EN source text. Other locales deliberately use English source, visibly labelled in the UI.
 import { languages } from './i18n.ts';
 export const copy = {
+  allocation_title: [
+    'Verteilung der Testeinzahlungen',
+    'Test deposit allocation',
+  ],
+  allocation_test_account: [
+    'Gemeinsames lokales Testkonto · inklusive Initialfinanzierung · wertlose dUSD. Keine persönlichen Guthaben.',
+    'Shared local test account · includes initial funding · worthless dUSD. No personal balances.',
+  ],
+  allocation_explanation: [
+    'Kumulierte bestätigte Einzahlungen je Bündnis, keine verbleibenden Guthaben. Einzelne NGO-Auszahlungen können diesen Einzahlungen nicht zugeordnet werden.',
+    'Cumulative confirmed deposits per alliance, not remaining balances. Individual NGO payouts cannot be attributed to these deposits.',
+  ],
+  allocation_total: ['Insgesamt eingezahlt', 'Total deposited'],
+  allocation_load_failed: [
+    'Einzahlungen konnten nicht aktualisiert werden. Bitte erneut aktualisieren.',
+    'Deposits could not be refreshed. Please try refreshing again.',
+  ],
+  allocation_index_required: [
+    'Für die Verteilung wird ein aktueller, vollständiger bestätigter Index benötigt. Der Index ist veraltet oder nicht verfügbar. Bitte später aktualisieren.',
+    'Allocation requires a current, complete confirmed index. The index is stale or unavailable. Please refresh later.',
+  ],
+  allocation_no_organizations: [
+    'Noch keine Organisationen registriert.',
+    'No organizations registered yet.',
+  ],
+  allocation_no_deposits: [
+    'Noch keine bestätigten Testeinzahlungen.',
+    'No confirmed test deposits yet.',
+  ],
+  allocation_rounding: [
+    'Prozentwerte sind gerundet; ihre Summe kann von 100 % abweichen.',
+    'Percentages are rounded; their sum may differ from 100%.',
+  ],
+  ngo_access: ['NGO-Zugang', 'NGO access'],
+  sign_out: ['Abmelden', 'Sign out'],
+  sign_out_to_public: [
+    'Abmelden und zur Öffentlichkeit',
+    'Sign out and return to public pages',
+  ],
+  session_checking: ['Sitzung wird geprüft …', 'Checking session …'],
+  session_failed: [
+    'Sitzung konnte nicht geprüft werden.',
+    'Could not check session.',
+  ],
+  choose_ngo: ['NGO auswählen', 'Choose NGO'],
   blockchain_confirmed_local: [
     'Blockchain bestätigt · lokal',
     'Blockchain confirmed · local',
@@ -61,7 +106,7 @@ export const copy = {
     'End the NGO session first',
   ],
   test_donation: ['Testspende', 'Test donation'],
-  settings_and_sign_in: ['Einstellungen und Anmeldung', 'Settings and sign-in'],
+  settings_and_sign_in: ['Einstellungen', 'Settings'],
   new_interface_text_english_source: [
     'Neue Oberflächentexte: englischer Ausgangstext',
     'New interface text: English source',

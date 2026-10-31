@@ -1,3 +1,4 @@
+import {ViewNavigation} from './view-navigation.tsx';
 import React, {useEffect, useRef, useState} from 'react';
 import {BaseError,ContractFunctionRevertedError,createPublicClient,createWalletClient,custom,decodeEventLog,formatUnits,http,keccak256,parseAbiItem,toHex,type Address,type Hex} from 'viem';
 import {foundry} from 'viem/chains';
@@ -123,7 +124,7 @@ export function Portal() {
     return `${40+i*4.8},${175-(y-minimum)/(maximum-minimum)*135}`;
   }).join(' ');
   return <>
-    <header className="topbar"><a className="brand" href="/">DisasterDAO<span className="brand-dot"/></a><span className="network">{local?'Anvil · 31337':'V2 · Vorschau'} / Nur Testmittel</span><button disabled={busy||!local} onClick={()=>run(async()=>{await connect();})}>{account?short(account):'Wallet verbinden'}</button></header>
+    <header className="topbar"><a className="brand" href="/">DisasterDAO<span className="brand-dot"/></a><ViewNavigation active="demo" label="Hauptnavigation"/><span className="network">{local?'Anvil · 31337':'V2 · Vorschau'} / Nur Testmittel</span><button disabled={busy||!local} onClick={()=>run(async()=>{await connect();})}>{account?short(account):'Wallet verbinden'}</button></header>
     <main>
       <section className="intro"><div><p className="eyebrow">GEMEINSAMER KATASTROPHENFONDS</p><h1>Hilfe, die mit<br/>der Lage wächst.</h1><p>Drei Datenquellen. Klare Grenzen. Ein gemeinsamer Pool.</p></div><div className="intro-note">Historische Demonstration<br/><strong>Fiktive NGOs · wertlose dUSD</strong><a href={`/?legacy=1${local?'&local=1':''}`}>Bisherigen MVP ansehen ↗</a></div></section>
       <section className="metrics" aria-label="Fondsübersicht"><article><span>Im gemeinsamen Pool</span><strong>{snapshot?money(snapshot.balance):'18.000'}<small> dUSD</small></strong><p>{snapshot?'On-chain gelesen':'Geplantes Demo-Budget'}</p></article><article><span>Ausgezahlt</span><strong>{snapshot?money(snapshot.paid):'—'}<small> dUSD</small></strong><p>Ein Anspruch pro NGO und Einsatz</p></article><article><span>Maximal pro Anspruch</span><strong>2.000<small> dUSD</small></strong><p>6.000 dUSD für jeden Einsatz reserviert</p></article></section>

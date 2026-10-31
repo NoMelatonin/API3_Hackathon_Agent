@@ -8,6 +8,7 @@
     "node": ">=22.18"
   },
   "scripts": {
+    "install:local": "node scripts/install-local.mjs",
     "fetch-response": "node --env-file-if-exists=.env src/fetch-response.ts",
     "request-hash": "node src/request-hash.ts",
     "verify-response": "node src/verify-response.ts",

@@ -11,11 +11,11 @@ V3 ergänzt V1/V2 auf `feat/disasterdao-shared-fund`. Es gibt keine Migration od
 Voraussetzungen: Node ≥22.18, Docker Desktop gestartet, freie Ports 5173, 3007, 5437, 9007 und 8547. Die Compose-Images sind per Digest festgelegt; geprüft auf macOS/Apple Silicon. Die erste Ausführung lädt die Images und benötigt Internet. Danach läuft die Standarddemo ohne externe Datenabrufe.
 
 ```sh
-npm ci
+npm run install:local
 npm run v3:start
 ```
 
-Öffnen: **http://127.0.0.1:5173/?v3=1** (auch der neue Standard unter `/`). Start nur einmal ausführen; bereits laufende Vite-/Backend-Terminals zuvor beenden. Docker-Volumes und `.runtime/` bleiben beim Beenden erhalten. Weder bestehende lokale V1-/V2-Konfigurationen noch Original-Fixtures werden überschrieben.
+User öffnen: **http://127.0.0.1:5173/?v3=1#/home** (auch der neue Standard unter `/`). Start nur einmal ausführen; bereits laufende Vite-/Backend-Terminals zuvor beenden. Docker-Volumes und `.runtime/` bleiben beim Beenden erhalten. Weder bestehende lokale V1-/V2-Konfigurationen noch Original-Fixtures werden überschrieben.
 
 Einzelschritte, falls Dienste separat gestartet werden sollen:
 
@@ -31,6 +31,24 @@ npm run dev
 `v3:deploy` verweigert ein abweichendes bestehendes Deployment. Bei Wiederholung überprüft es Contract-Code (mit separat geprüften Immutables), Chain 31337 und alle Rollen. Die maßgebliche Konfiguration heißt `.runtime/v3.1-persistent.json`. Ein abweichender Fonds kann mit `V3_DEPLOYMENT=.runtime/eigener-name.json` für **sämtliche** V3-Kommandos gewählt werden. Frühere lokale V3-Entwicklungsversuche können daneben liegen und werden nicht migriert. Der Anvil-Container verwendet ein eigenes beschreibbares Named Volume und speichert seinen Zustand sekündlich.
 
 V1 bleibt unter `/?legacy=1`, V2 unter `/?v2=1`, lokale V2 zusätzlich `&local=1`. Deren bisherige Skripte und historische Chain auf Port 8545 bleiben getrennt. V3 nutzt Port **8547** und verändert keine Originalsignatur oder deren Zeitstempel.
+
+Die Kopf-Navigation **Demo · NGO · User** verbindet V2-Demo, NGO-Einstieg und öffentliche V3-Startseite. Der Wechsel meldet eine NGO-Sitzung nicht ab. User zeigt zusätzlich die bestätigten Testeinzahlungen je Bündnis als Ringdiagramm; keine persönlichen Guthaben. Bei fehlendem/veraltetem Index warten und „Aktualisieren“ wählen; gemint ist noch nicht indexbestätigt.
+
+Aktueller NGO-Einstieg: **http://127.0.0.1:5173/?v3=1&ngo=1**. Dort NGO auswählen und anmelden; Abmelden und Rückkehr zur Öffentlichkeit ist eine eigene Aktion. Kein NGO-Login im öffentlichen Zahnrad.
+
+## Abhängigkeiten ohne Cloud-Blockade
+
+Der lokale Betreiber startet künftig mit `npm run v3:start`; eine erneute Installation vor jedem Start ist nicht nötig. Der Start prüft zuerst Manifest, Lockfile, npm-Konfiguration, Node-Hauptversion und Plattform. Nur bei Änderungen oder fehlendem Cache wird installiert. Es ist keine fachliche Freigabe nötig; NGOs und Prüferrollen bleiben unverändert.
+
+`npm run install:local` (ohne npm alternativ `node scripts/install-local.mjs`) installiert mit `npm ci` in einem neuen lokalen Cache-Verzeichnis und verlinkt danach `node_modules`. Unter macOS liegt der Cache in `~/Library/Caches/disasterdao-deps/`, auf anderen Systemen in `~/.cache/disasterdao-deps/`. `DISASTERDAO_DEPS_CACHE` darf einen anderen lokalen, nicht synchronisierten Pfad außerhalb des Projekts setzen. Fehlgeschlagene Installationen ersetzen keine funktionierenden Abhängigkeiten. Netzabrufe haben begrenzte Wiederholungen; nach fünf Minuten bricht das Werkzeug mit einer Fehlermeldung ab. Das ist keine Garantie gegen Betriebssystem- oder Netzwerkausfälle.
+
+**Hier kein direktes `npm ci` verwenden:** npm kann den Symlink entfernen und wieder Abhängigkeiten auf dem synchronisierten Desktop anlegen. Der nächste sichere Start repariert das. Für eine bewusst frische Installation: `npm run install:local -- --clean`, bei zuvor beendeten Entwicklungsservern. Der Installer verhindert parallele Aufrufe seines eigenen Installationswegs; direkte npm-Aufrufe werden nicht abgefangen.
+
+Alte Abhängigkeitsordner werden ausschließlich umbenannt und unter `.dependency-backups.noindex/` erhalten. Sie werden nicht rekursiv gelesen oder automatisch gelöscht. Das vermeidet das erneute Lesen blockierter Cloud-Platzhalter; alte Caches und Sicherungen können Speicher belegen. Vite beobachtet diese Sicherungen nicht, sperrt ihren HTTP-Zugriff und begrenzt den Einstieg seiner Abhängigkeitssuche auf `index.html`. Auch frühere `node_modules.stalled-*`-Sicherungen sind ausgeschlossen.
+
+Die Installation außerhalb des Projekts ist auf dessen aktuelle Registry-Abhängigkeiten ohne Root-Installationshooks ausgelegt. Bei späteren lokalen `file:`-/Workspace-Abhängigkeiten oder Installationshooks muss dieser Ablauf mit angepasst werden. Quellcode, `.runtime/` und Docker-Volumes bleiben an ihren bisherigen Orten; deren Cloud-Synchronisation wird dadurch nicht gelöst. Nächster Schritt nach erfolgreichem Start: die oben verlinkte Oberfläche öffnen.
+
+Umsetzung: [Installer](../../scripts/install-local.mjs), [Start](../../src/v3/start.ts), [Vite](../../vite.config.ts). Installer-Prüfungen: `node --test scripts/install-local.test.mjs`.
 
 ## Vollständiger Durchlauf
 

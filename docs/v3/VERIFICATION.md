@@ -69,3 +69,49 @@ V3_UI_URL=http://127.0.0.1:4173 CHROME_PATH=/usr/bin/chromium npm run v3:test:ui
 In dieser Cloud-Umgebung wurde Forge direkt über `node_modules/@foundry-rs/forge-linux-amd64/bin/forge test --use /tmp/disasterdao-solc` aufgerufen. Die lokal bereitgestellte Compilerdatei ist Solidity 0.8.37; der standardmäßige Installationspfad war schreibgeschützt. Es wurden keine Contract-Quellen geändert.
 
 Die Browserfälle prüfen bei privaten Quellpfaden entweder eine Zugriffsverweigerung oder die reine HTML-Fallbackseite des statischen Previewservers; private Dateien werden nicht ausgeliefert. Die Vite-Dateisperren bleiben konfiguriert. Legacy-Transaktionsabläufe auf neuen V1/V2-Deployments wurden nicht ausgeführt. Neue Oberflächentexte sind DE/EN-Ausgangstexte; andere Sprachen verwenden sichtbar gekennzeichnete englische Ausgangstexte. Die Abnahme behauptet keine vollständige WCAG-Zertifizierung oder produktive Identitäts-/Prüferinfrastruktur.
+
+## NGO-Einstieg und neutrales Demo-Theme — 31.10.2026
+
+- `npm run build`: bestanden, einschließlich beider TypeScript-Prüfungen. Vite meldet weiterhin den externalisierten `node:worker_threads`-Import aus `ox`; kein Buildfehler.
+- `node --test server/ui.test.ts`: 3 bestanden. NGO-Rollengrenze, gesperrte Testspende bei NGO-Sitzung sowie wiederholtes Logout und Entfernen unbekannter/abgelaufener Sessioncookies geprüft.
+- `playwright test e2e/entries.spec.ts`: 6 bestanden am Entwicklungsserver mit simulierten API-Antworten.
+- Dieselben 6 Prüfungen gegen den Produktionsbuild auf Port 4173 bestanden (`V3_UI_URL=http://127.0.0.1:4173`). Enthalten: alter NGO-Hashlink, Anmeldung aller drei Rollen, Reload mit Sitzung, explizite Abmeldung/Rückkehr, Spendenschutz, Sessionfehler mit Wiederholen und Sessionablauf bei Tab-Fokus. Zusätzlich Hell/Dunkel bei 390/1280 px, berechnete Flächen-/Kurvenfarben, Theme-Erhalt beim Einstiegswechsel, Dialog/Escape/Fokusrückgabe und NGO-Überlaufprüfung; auch angemeldete NGO-Navigation bei 390 px.
+- Screenshots für Demo mit offenem Notfallbereich und NGO-Anmeldung wurden unter `test-results/` erzeugt; visuell auf neutrale Dark-Flächen und lesbare Hierarchie geprüft.
+
+Diese Browserprüfungen simulieren Rollen und API-Daten. Sie belegen keine neuen Chain-Transaktionen, realen Identitäten oder vollständigen NGO-Fachabläufe. Der vorhandene `e2e/v3.spec.ts` wurde auf den neuen Loginweg angepasst, aber sein zustandsverändernder vollständiger Stacktest wurde nicht erneut ausgeführt. V1 und lokale V2-Transaktionen wurden nicht erneut funktional geprüft. Vorherige Nachweise bleiben historisch und werden dadurch nicht erneuert.
+
+## Lokaler Installationsweg gegen Cloud-Blockaden — 31.10.2026
+
+Prüfgrundlage: Quellcodeprüfung des neuen Installers, `src/v3/start.ts` und `vite.config.ts`, anschließend folgende neue lokale Laufzeitprüfungen. Bestehende UI-Änderungen im Arbeitsbaum wurden erhalten.
+
+- Frische Installation über `node scripts/install-local.mjs`: 140 Pakete in fünf Sekunden in `~/Library/Caches/disasterdao-deps/` installiert; bisheriges `node_modules` nur umbenannt und erhalten.
+- Wiederholter Aufruf: vorhandenen Cache ohne erneute Installation verwendet.
+- `node --test scripts/install-local.test.mjs`: fünf Prüfungen bestanden; Sicherungserhalt, Cache-Wiederverwendung, Lockfilewechsel, explizite Neuinstallation, Fehler mit Erhalt des bisherigen Links, Reparatur eines neu angelegten Projektordners, Ablehnung eines Projekt-Caches sowie parallele/verwaiste Installer-Sperren. Kontrollierte temporäre Dateisysteme; Fehlerfälle ohne echte Netzunterbrechung.
+- `npm run build`: Typechecks und Produktionsbuild bestanden. Der erste Versuch in der Agent-Sandbox konnte Vites Cache nicht beschreiben; Wiederholung mit Cache-Schreibzugriff erfolgreich. Bekannter optionaler `node:worker_threads`-Hinweis bleibt bestehen.
+- `npm run v3:start`: Cache wiederverwendet, Compose gestartet/geprüft, vorhandenes Deployment erhalten, Backend und Vite gestartet; Vite bereit nach 122 ms.
+- HTTP-Prüfung: Startseite, `web/main.tsx`, optimiertes React-Modul jeweils 200; Backend-Health erfolgreich, Chain-ID 31337. Ein tatsächlich angelegter Testinhalt in der Abhängigkeitssicherung lieferte HTTP 403; danach entfernt. Ein nicht existierender Sicherungspfad kann wie andere unbekannte URLs den SPA-Fallback mit 200 liefern.
+
+Keine neue vollständige Browser-, Vertrags- oder Integrationsabnahme; keine echten NGO-/Prüferfreigaben oder öffentlichen Transaktionen. Die fünfminütige Abbruchgrenze und ein langfristiger Cloud-Synchronisationszyklus wurden nicht zeitlich durchlaufen. Normales direktes `npm ci` kann den Symlink entfernen; deshalb dokumentieren README und Betriebsanleitung den sicheren Installer beziehungsweise den automatischen Start. Die Landkarte und die betroffenen Start-/Architektureinträge wurden mit dieser Änderung abgeglichen.
+
+## Navigation und Testeinzahlungsdiagramm — 31.10.2026
+
+Prüfgrundlage: aktueller Arbeitsbaum, gemeinsame Ansichtslinks, Organisationsprojektion und neue Diagrammkomponente. Vorhandene uncommittete Änderungen wurden erhalten. Die Landkarte wurde in den Abschnitten 2, 5 und 8 aktualisiert; Rollen, Freigaben und Finanzregeln bleiben unverändert.
+
+| Ausgeführte Prüfung | Ergebnis |
+|---|---|
+| `npm run build` | Beide TypeScript-Prüfungen und Produktionsbuild bestanden. Bekannter optionaler `node:worker_threads`-Hinweis aus `ox` bleibt bestehen. |
+| `V3_UI_URL=http://127.0.0.1:4173 node_modules/.bin/playwright test e2e/entries.spec.ts --output test-results/entries-production` | 23 bestanden mit kontrollierten API-Antworten gegen den Produktionsbuild. |
+| `V3_UI_URL=http://127.0.0.1:4173 npm run v3:test:ui -- --output test-results/v3-production` | 4 bestanden gegen lokalen V3-Stack: Einstiege/History, Einstellungen/Sprachen/RTL/Bildpause, NGO-Antrag/Testspende und neue Indexbestätigungsprüfung. |
+| `node --test src/v3/i18n.test.ts server/ui.test.ts` | 5 bestanden: Übersetzungsvollständigkeit/Fallback, präzise Einzahlungsaggregation, Signatur- und Browserrollengrenzen. |
+| `npm run v3:integration` | 4 bestanden, einschließlich isoliertem externem Freigabeablauf, Dokumentgrenzen, bestätigten Snapshots und Reorg-Rekonstruktion. |
+| `git diff --check` | Keine Whitespacefehler. |
+
+Die 23 UI-Prüfungen umfassen alle sechs Ansichtswechsel, aktive Markierung, History/Reload, lokale V2-Zuordnung, Sitzungserhalt und explizite Abmeldung; außerdem Ein-/Mehrorganisationen-Verteilung, Nullsumme, leeres Register, Laden, fehlgeschlagenes Aktualisieren mit Unterdrückung alter Werte und Wiederherstellung sowie veraltete/unverfügbare Teilbestände. Mehrere Organisationen existieren ausschließlich als Testfixtures. DE/EN und arabisches RTL-Fallback wurden bei 390/1280 px jeweils hell/dunkel geprüft, einschließlich Tastaturreihenfolge, Touchflächen und fehlendem horizontalem Überlauf. Screenshots von User und Demo wurden zusätzlich visuell auf Lesbarkeit und Layout geprüft.
+
+Der neue Stacktest belegt mit einer lokalen Testspende: Gemint verändert die Summe noch nicht; nach zwei weiteren Blöcken und Indexlauf steigt sie genau um 1 dUSD. Die Browsertests restaurieren Chain-/Anwendungszustand und rekonstruieren anschließend den Index. Die Backendprüfung verwendet ein isoliertes Testschema und restauriert die Chain.
+
+Erste Versuche am bereits laufenden Entwicklungsserver scheiterten beim Demo-Einstieg an HTTP 504 „Outdated Optimize Dep“. Der Produktionsbuild war davon nicht betroffen. Außerdem wurden bestehende Testannahmen korrigiert: abgeschlossene Login-Weiterleitung abwarten, aktueller englischer Einstellungsname und React-Zustandswechsel bei aufgehobenem Reduced Motion vor der virtuellen Uhr. Die oben genannten Ergebnisse stammen aus den abschließenden erfolgreichen Läufen. `playwright.config.ts` unterstützt jetzt ebenfalls `V3_UI_URL`, damit die Einstiegstests reproduzierbar gegen den Produktionsbuild laufen.
+
+Grenzen: lokale Simulation und wertlose dUSD; keine echten persönlichen Guthaben oder Zuordnung zu NGO-Auszahlungen. Keine neue V1-/V2-Transaktionsabnahme, keine vollständige WCAG-Zertifizierung und keine produktive Sicherheitsfreigabe. Der Build benötigte Schreibzugriff auf den vorhandenen externen Vite-Cache; Browser-/Stacktests lokalen Browser- und Containerzugriff.
+
+Abschließend wurde der bestehende lokale App-Prozess kontrolliert neu gestartet (`npm run v3:start`); Deployment und Docker-Volumes blieben erhalten. Danach wurden Demo, NGO und User auf Port 5173 erneut im Browser geöffnet: aktive Ansicht jeweils korrekt, keine Browserfehler, tatsächliche Anzeige 18.000 dUSD Testeinzahlungen. Der temporäre Produktions-Preview auf Port 4173 wurde nach den Tests beendet.

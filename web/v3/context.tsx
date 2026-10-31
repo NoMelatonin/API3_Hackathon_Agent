@@ -73,6 +73,7 @@ export function saveJSON(name: string, data: unknown) {
 }
 export interface UI {
   loaded: boolean;
+  organizationsState: 'loading' | 'ready' | 'error';
   locale: string;
   zone: string;
   organizations: Organization[];

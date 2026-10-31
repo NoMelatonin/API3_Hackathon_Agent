@@ -2,6 +2,9 @@ import { test, expect } from '@playwright/test';
 import pg from 'pg';
 import { createPublicClient, http, testActions } from 'viem';
 import { foundry } from 'viem/chains';
+import { tick } from '../server/worker.ts';
+import { Database } from '../server/store.ts';
+import type { State } from '../server/state.ts';
 import { languages } from '../web/v3/i18n.ts';
 const chain = createPublicClient({
   chain: foundry,
@@ -18,13 +21,19 @@ test.beforeEach(async () => {
 });
 test.afterEach(async () => {
   await chain.revert({ id: snap });
+  const indexDb = new Database<State>();
+  try {
+    await tick(indexDb);
+  } finally {
+    await indexDb.pool.end();
+  }
   await db.query('UPDATE v3_state SET body=$1 WHERE id=1', [
     JSON.stringify(saved),
   ]);
 });
 test.afterAll(async () => db.end());
 
-test('four separate entries, compatible links, history and no home portfolio', async ({
+test('four separate entries, compatible links, history and shared test deposit allocation', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -40,6 +49,9 @@ test('four separate entries, compatible links, history and no home portfolio', a
       .locator('.organization-card'),
   ).toHaveCount(1);
   await expect(page.locator('.metrics')).toHaveCount(0);
+  await expect(page.locator('#support-allocation-title')).toHaveText(
+    'Verteilung der Testeinzahlungen',
+  );
   await page.locator('.organization-card>a').first().click();
   await expect(page).toHaveURL(/#\/organizations\/local-alliance$/);
   await expect(
@@ -54,6 +66,9 @@ test('four separate entries, compatible links, history and no home portfolio', a
   ).toBeVisible();
   await page.goBack();
   await expect(page.locator('.metrics')).toHaveCount(0);
+  await expect(page.locator('#support-allocation-title')).toHaveText(
+    'Verteilung der Testeinzahlungen',
+  );
   await page.goForward();
   await page.reload();
   await expect(page.locator('.member-list li')).toHaveCount(3);
@@ -84,7 +99,7 @@ test('settings focus, all language resources, themes, responsive RTL and image r
 }) => {
   await page.goto('/?v3=1');
   const gear = page.getByRole('button', {
-    name: 'Einstellungen und Anmeldung',
+    name: 'Einstellungen',
   });
   await gear.click();
   const dialog = page.getByRole('dialog');
@@ -133,7 +148,7 @@ test('settings focus, all language resources, themes, responsive RTL and image r
   ).toBe(true);
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await page.getByRole('button', { name: 'Settings and sign-in' }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.locator('.preferences-grid select').first().selectOption('de');
   await page.keyboard.press('Escape');
   await expect(gear).toBeFocused();
@@ -144,9 +159,12 @@ test('settings focus, all language resources, themes, responsive RTL and image r
   await page.clock.fastForward(11000);
   await expect(img).toHaveAttribute('src', original!);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(
+    page.locator('.card-controls').first().locator('button').last(),
+  ).toBeEnabled();
   await page.locator('h1').hover();
   await page.clock.fastForward(11000);
-  expect(await img.getAttribute('src')).not.toBe(original);
+  await expect(img).not.toHaveAttribute('src', original!);
   const pause = page
     .getByRole('button', { name: 'Pause', exact: true })
     .first();
@@ -172,12 +190,10 @@ test('NGO workspace, preview wizard, private boundary and public test donation d
   await dialog.getByRole('button', { name: 'Testspende bestätigen' }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByText(/Testspende gemined/)).toBeVisible();
-  await page
-    .getByRole('button', { name: 'Einstellungen und Anmeldung' })
-    .click();
-  expect(
-    await page.locator('dialog select').last().locator('option').count(),
-  ).toBe(3);
+  await page.getByRole('link', { name: 'NGO', exact: true }).click();
+  await expect(page.getByLabel('NGO auswählen').locator('option')).toHaveCount(
+    3,
+  );
   await page.getByRole('button', { name: 'NGO anmelden', exact: true }).click();
   await expect(page).toHaveURL(/#\/ngo$/);
   await expect(
@@ -214,5 +230,47 @@ test('NGO workspace, preview wizard, private boundary and public test donation d
       expect(response.headers()['content-type']).toContain('text/html');
       expect(await response.text()).toContain('<div id="root">');
     } else expect([403, 404]).toContain(response.status());
+  }
+});
+
+test('test allocation only increases after the donation enters the confirmed index', async ({
+  page,
+  request,
+}) => {
+  const indexDb = new Database<State>();
+  try {
+    await chain.mine({ blocks: 2 });
+    await tick(indexDb);
+    await page.goto('/?v3=1#/home');
+    const beforeResponse = await request.get('/api/v3/organizations');
+    const before = (await beforeResponse.json()).organizations[0];
+    const amountBefore = BigInt(before.support.total);
+    const format = (value: bigint) =>
+      new Intl.NumberFormat('de', { maximumFractionDigits: 6 }).format(
+        Number(value) / 1e6,
+      ) + ' dUSD';
+    await expect(page.getByTestId('allocation-total')).toHaveText(
+      format(amountBefore),
+    );
+    await page.getByRole('button', { name: 'Testspende', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('spinbutton').fill('1');
+    await dialog.getByRole('button', { name: 'Testspende bestätigen' }).click();
+    await expect(page.getByText(/Testspende gemined/)).toBeVisible();
+    // Mining alone leaves the deposit outside the two-block-deep confirmed index.
+    const minedResponse = await request.get('/api/v3/organizations');
+    expect((await minedResponse.json()).organizations[0].support.total).toBe(
+      String(amountBefore),
+    );
+    await expect(page.getByTestId('allocation-total')).toHaveCount(0);
+    await chain.mine({ blocks: 2 });
+    await tick(indexDb);
+    await page.locator('.support-allocation').getByRole('button').click();
+    await expect(page.getByTestId('allocation-total')).toHaveText(
+      format(amountBefore + 1000000n),
+    );
+    await expect(page.getByText(/Testspende gemined/)).toHaveCount(0);
+  } finally {
+    await indexDb.pool.end();
   }
 });

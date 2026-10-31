@@ -11,7 +11,9 @@ const legacy = new URLSearchParams(location.search).get('legacy') === '1';
 if (v3) await import('./v3/style.css');
 else if (legacy) await import('./legacy.css');
 else await import('./style.css');
-if (!v3) await import('./theme-legacy.css');
+if (legacy && !v3) await import('./theme-legacy.css');
+else if (!v3) await import('./demo-theme.css');
+if (!v3 && !legacy) document.body.classList.add('demo-app');
 const App = v3
   ? (await import('./v3/app.tsx')).SharedFundApp
   : legacy

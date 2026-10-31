@@ -256,7 +256,6 @@ export async function buildApp(
     },
   );
   app.delete('/api/v3/session', async (req, reply) => {
-    auth(req);
     const token = String(req.headers.cookie ?? '').match(
       /v3_session=([^;]+)/,
     )?.[1];

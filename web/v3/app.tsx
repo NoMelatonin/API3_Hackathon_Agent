@@ -1,11 +1,13 @@
 import { uiText, type UIKey } from './copy.ts';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ViewNavigation } from '../view-navigation.tsx';
 import { catalog, languages, countries, translationStatus } from './i18n.ts';
 import { api, amount, formatters, UIContext, type Portal } from './context.tsx';
 import type { Organization } from '../../src/v3/ui-types.ts';
 import { Dialog, ExternalIcon, GearIcon } from './components.tsx';
 import { HomePage } from './home.tsx';
 import { OrganizationPage } from './organization.tsx';
+import { NGOEntry } from './ngo-entry.tsx';
 import { NGOPage } from './ngo.tsx';
 const stored = (key: string, fallback: string) => {
   try {
@@ -31,12 +33,22 @@ export function resolveRoute(hash: string) {
   return { kind: 'missing' };
 }
 export function SharedFundApp() {
+  const ngoEntry = new URLSearchParams(location.search).get('ngo') === '1';
+  const publicHome = '/?v3=1#/home';
+  const ngoHome = '/?v3=1&ngo=1#/ngo';
+  const [sessionState, setSessionState] = useState<
+    'checking' | 'authenticated' | 'anonymous' | 'error'
+  >('checking');
   const [locale, setLocale] = useState(stored('locale', 'de')),
     [country, setCountry] = useState(stored('country', 'DE')),
     [zone, setZone] = useState(stored('zone', 'Europe/Berlin')),
     [currency, setCurrency] = useState(stored('currency', 'EUR')),
     [theme, setTheme] = useState(stored('theme', 'system'));
   const [loaded, setLoaded] = useState(false);
+  const [organizationsState, setOrganizationsState] = useState<
+    'loading' | 'ready' | 'error'
+  >('loading');
+  const organizationsRequest = useRef(0);
   const [route, setRoute] = useState(resolveRoute(location.hash)),
     [organizations, setOrganizations] = useState<Organization[]>([]),
     [portal, setPortal] = useState<Portal>(),
@@ -54,15 +66,44 @@ export function SharedFundApp() {
   const old = (key: keyof typeof catalog.en) =>
     catalog[locale]?.[key] ?? catalog.en![key];
   async function refresh() {
-    const [data, p] = await Promise.all([
-      api<{ organizations: Organization[] }>('/organizations'),
-      api<Portal>('/portal').catch((e) => {
-        if ((e as Error & { status?: number }).status === 401) return undefined;
+    const request = ++organizationsRequest.current;
+    const organizationData = api<{ organizations: Organization[] }>(
+      '/organizations',
+    )
+      .then((data) => {
+        if (request === organizationsRequest.current) {
+          setOrganizations(data.organizations);
+          setLoaded(true);
+          setOrganizationsState('ready');
+        }
+        return data;
+      })
+      .catch((e) => {
+        if (request === organizationsRequest.current)
+          setOrganizationsState('error');
         throw e;
-      }),
+      });
+    const session = api<Portal>('/portal')
+      .then((p) => {
+        setPortal(p);
+        setSessionState('authenticated');
+        return p;
+      })
+      .catch((e) => {
+        setPortal(undefined);
+        if (e.status === 401) {
+          setSessionState('anonymous');
+          return undefined;
+        }
+        setSessionState('error');
+        throw e;
+      });
+    const [data, p, roleData] = await Promise.all([
+      organizationData,
+      session,
+      api<{ roles: typeof roles }>('/roles'),
     ]);
-    setOrganizations(data.organizations);
-    setLoaded(true);
+    setRoles(roleData.roles);
     setPortal(p);
     if (data.organizations[0]?.snapshot.status === 'confirmed') {
       const confirmed = await api<{ items: { tx: string }[] }>(
@@ -82,16 +123,24 @@ export function SharedFundApp() {
       await refresh();
       setMessage(tr('saved_chain_and_review_statuses_are_shown'));
     } catch (e) {
+      if ((e as { status?: number }).status === 401) {
+        setPortal(undefined);
+        setSessionState('anonymous');
+      }
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
   }
   useEffect(() => {
-    api<{ roles: typeof roles }>('/roles')
-      .then((r) => setRoles(r.roles))
-      .catch(() => {});
     refresh().catch((e) => setError((e as Error).message));
+  }, []);
+  useEffect(() => {
+    const check = () => {
+      void refresh().catch((e) => setError((e as Error).message));
+    };
+    addEventListener('focus', check);
+    return () => removeEventListener('focus', check);
   }, []);
   useEffect(() => {
     if (!pending.length && !portal) return;
@@ -130,6 +179,23 @@ export function SharedFundApp() {
     media.addEventListener('change', apply);
     return () => media.removeEventListener('change', apply);
   }, [locale, country, zone, currency, theme]);
+  useEffect(() => {
+    if (!ngoEntry && route.kind === 'ngo') location.replace(ngoHome);
+    if (
+      ngoEntry &&
+      (route.kind === 'home' || route.kind === 'organization') &&
+      location.hash
+    )
+      location.replace('/?v3=1' + location.hash);
+    if (ngoEntry && sessionState === 'authenticated' && !location.hash)
+      location.replace(ngoHome);
+  }, [ngoEntry, route.kind, sessionState]);
+  async function logout(destination: string) {
+    await api('/session', 'DELETE');
+    setPortal(undefined);
+    setSessionState('anonymous');
+    location.assign(destination);
+  }
   const ethereum = (
     window as unknown as {
       ethereum?: {
@@ -148,6 +214,7 @@ export function SharedFundApp() {
     <UIContext.Provider
       value={{
         loaded,
+        organizationsState,
         locale,
         zone,
         organizations,
@@ -171,31 +238,35 @@ export function SharedFundApp() {
           {tr('skip_to_content')}
         </a>
         <header className="v3-header">
-          <a className="brand" href="#/home">
+          <a className="brand" href={ngoEntry ? ngoHome : publicHome}>
             DisasterDAO
             <span>
               <ExternalIcon />
             </span>
           </a>
-          <nav aria-label={tr('main_navigation')}>
-            <a
-              href="#/home"
-              aria-current={route.kind === 'home' ? 'page' : undefined}
-            >
-              {tr('discover')}
-            </a>
-            <a
-              href="#/ngo"
-              aria-current={route.kind === 'ngo' ? 'page' : undefined}
-            >
-              NGO
-            </a>
-            <a href="/?v2=1">
-              Demo <ExternalIcon />
-            </a>
-          </nav>
+          <ViewNavigation
+            active={ngoEntry ? 'ngo' : 'user'}
+            label={tr('main_navigation')}
+          />
+          {ngoEntry && portal && (
+            <div className="ngo-session-actions">
+              <span>{portal.role.name}</span>
+              <button
+                disabled={busy}
+                onClick={() => run(() => logout('/?v3=1&ngo=1'))}
+              >
+                {tr('sign_out')}
+              </button>
+              <button
+                disabled={busy}
+                onClick={() => run(() => logout(publicHome))}
+              >
+                {tr('sign_out_to_public')}
+              </button>
+            </div>
+          )}
           <div className="header-actions">
-            {route.kind !== 'ngo' && (
+            {!ngoEntry && (
               <button
                 className="primary"
                 disabled={!!portal}
@@ -249,12 +320,32 @@ export function SharedFundApp() {
               {tr('reviewers_now_work_outside_the_app_ngos')}
             </p>
           )}
-          {route.kind === 'home' ? (
+          {ngoEntry && route.kind !== 'missing' ? (
+            sessionState === 'authenticated' && portal ? (
+              <NGOPage key={portal.role.id} />
+            ) : (
+              <NGOEntry
+                state={sessionState}
+                roles={roles}
+                role={role}
+                setRole={setRole}
+                busy={busy}
+                onLogin={() =>
+                  run(async () => {
+                    await api('/session', 'POST', { role });
+                    await refresh();
+                    location.replace(ngoHome);
+                  })
+                }
+                onRetry={() => run(refresh)}
+              />
+            )
+          ) : route.kind === 'home' ? (
             <HomePage />
           ) : route.kind === 'organization' ? (
             <OrganizationPage id={route.id!} />
           ) : route.kind === 'ngo' ? (
-            <NGOPage />
+            <p role="status">{tr('session_checking')}</p>
           ) : (
             <section className="hero">
               <h1>{tr('page_not_found')}</h1>
@@ -351,49 +442,16 @@ export function SharedFundApp() {
               ))}
             </div>
             <p>{old('noRate')}</p>
-            <h3>{tr('ngo_sign_in')}</h3>
-            <p>{tr('simulated_local_role_no_identity_verification')}</p>
-            {portal ? (
+            {!ngoEntry && portal && (
               <>
-                <p>{portal.role.name}</p>
+                <p>
+                  {portal.role.name} · {tr('end_the_ngo_session_first')}
+                </p>
                 <button
                   disabled={busy}
-                  onClick={() =>
-                    run(async () => {
-                      await api('/session', 'DELETE');
-                      setPortal(undefined);
-                    })
-                  }
+                  onClick={() => run(() => logout(publicHome))}
                 >
-                  {old('logout')}
-                </button>
-              </>
-            ) : (
-              <>
-                <label>
-                  {old('login')}
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                  >
-                    {roles.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  disabled={busy || !roles.length}
-                  onClick={() =>
-                    run(async () => {
-                      await api('/session', 'POST', { role });
-                      setSettings(false);
-                      location.hash = '/ngo';
-                    })
-                  }
-                >
-                  {tr('sign_in_as_ngo')}
+                  {tr('sign_out_to_public')}
                 </button>
               </>
             )}

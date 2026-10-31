@@ -7,11 +7,15 @@
 Auf `disasterdao-shared-fund-ui-improvements`: getrennte Entdeckung, Organisationsdetail und NGO-Arbeitsbereich; gemeinsamer Fonds, externe 2/3-Signaturfreigaben, proportionale Förderrunden, kumulative Tranchen und private Nachweise. PostgreSQL und verschlüsselter privater S3-Speicher laufen lokal; 39 UI-Sprachen und System/Hell/Dunkel sind enthalten.
 
 ```sh
-npm ci
+npm run install:local
 npm run v3:start
 ```
 
-**http://127.0.0.1:5173/?v3=1#/home** · [Oberflächen und externe Freigaben](docs/v3/UI.md) · [Start und vollständiger Ablauf](docs/v3/LOCAL.md) · [Prüfbericht und Grenzen](docs/v3/VERIFICATION.md).
+Für spätere Starts genügt `npm run v3:start`: Abhängigkeiten werden automatisch geprüft und bei Änderungen installiert. Im cloud-synchronisierten Checkout `npm run install:local` statt direktem `npm ci` verwenden; Pakete liegen lokal außerhalb des Desktop-Ordners. [Details und Wiederherstellung](docs/v3/LOCAL.md#abhängigkeiten-ohne-cloud-blockade).
+
+**User: http://127.0.0.1:5173/?v3=1#/home** · **Demo: http://127.0.0.1:5173/?v2=1** · **NGO-Einstieg: http://127.0.0.1:5173/?v3=1&ngo=1** · [Oberflächen und externe Freigaben](docs/v3/UI.md) · [Start und vollständiger Ablauf](docs/v3/LOCAL.md) · [Prüfbericht und Grenzen](docs/v3/VERIFICATION.md).
+
+Die Kopf-Navigation verbindet Demo, NGO und User. Unter User zeigt ein Ringdiagramm die bestätigten Einzahlungen des gemeinsamen Testkontos je Bündnis, inklusive Initialfinanzierung; keine persönlichen Guthaben oder echten Gelder. Ein Ansichtswechsel erhält eine aktive NGO-Sitzung.
 
 Alle Rollen, Kostenbeispiele und Dokumente sind simuliert. Ein echtes vergleichbares 30-Tage-Ausgabenkorpus ist noch nicht belegt; keine automatische empirische Bedarfsfreigabe. V1/V2 und vorhandene Deployments bleiben erhalten. V2-Vorschau: `/?v2=1`; lokale V2 weiterhin `/?local=1`.
 
@@ -45,7 +49,7 @@ Gemeinsamer NGO-Katastrophenfonds mit signierter Soforthilfe und einem begrenzte
 Node.js ≥ 22.18 (geprüft mit 24.15.0):
 
 ```sh
-npm ci
+npm run install:local
 npm run forge -- build
 npm run dev
 ```

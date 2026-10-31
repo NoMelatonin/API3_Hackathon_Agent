@@ -1,6 +1,6 @@
 # V3-Landkarte: Funktionen, Rollen und grobe Umsetzung
 
-Stand: 31.10.2026. Abgeglichen mit dem aktuellen Code auf `disasterdao-shared-fund-ui-improvements`, Ausgangscommit `23d16ad`, Repository `NoMelatonin/API3_Hackathon_Agent`. Grundlage ist eine Quellcode- und Dokumentationsprüfung; für diese Landkarte wurden keine neuen Laufzeittests ausgeführt. Frühere Abnahmen stehen in [VERIFICATION.md](VERIFICATION.md).
+Stand: 31.10.2026. Abgeglichen mit dem aktuellen Code auf `disasterdao-shared-fund-ui-improvements`, Ausgangscommit `23d16ad`, Repository `NoMelatonin/API3_Hackathon_Agent`. Ergänzt am 31.10.2026 um eigenen NGO-Einstieg, getrenntes Demo-Theme, lokale Abhängigkeiten außerhalb des synchronisierten Checkouts sowie gemeinsame Ansichtslinks und das Testeinzahlungsdiagramm. Prüfgrundlage für Letzteres: aktueller Quellcode, API-Typen und die im Abschnitt „Navigation und Testeinzahlungsdiagramm“ von VERIFICATION.md protokollierten Prüfungen. Frühere Nachweise gelten nur für ihren jeweiligen Umfang; sie stehen weiterhin in [VERIFICATION.md](VERIFICATION.md).
 
 ## 1. Wozu dient die App?
 
@@ -16,20 +16,24 @@ Der **Smart Contract** ist das Programm auf der Blockchain, das Fondsbestand, Re
 
 | Einstieg | Zielgruppe und Funktionen | Zuständiger Code |
 |---|---|---|
-| `/?v3=1#/home` oder `/` | Öffentlichkeit: Organisationen über horizontale Karten entdecken, noch nicht vom Testkonto unterstützte Organisationen sehen, Testspende und Einstellungen öffnen. Kein persönliches Portfolio auf der Startseite. | [home.tsx](../../web/v3/home.tsx), [components.tsx](../../web/v3/components.tsx) |
+| `/?v3=1#/home` oder `/` | User/Öffentlichkeit: Organisationen entdecken, Verteilung bestätigter Testeinzahlungen je Bündnis als Ringdiagramm ansehen, Testspende und Einstellungen öffnen. Keine persönlichen Guthaben. | [home.tsx](../../web/v3/home.tsx), [Diagramm](../../web/v3/support-allocation.tsx), [components.tsx](../../web/v3/components.tsx) |
 | `/?v3=1#/organizations/local-alliance` | Organisationsdetail: Fondskennzahlen, Mitglieder, Gebiete, Unterstützungsverlauf des gemeinsamen Testkontos, bestätigte Aktivität und veröffentlichte Berichte. | [organization.tsx](../../web/v3/organization.tsx), [organizations.ts](../../server/organizations.ts) |
-| `/?v3=1#/ngo` | NGO-Arbeitsbereich: Fondsübersicht, Antragsassistent und Vorschau, Reservierungen/Abruf, Nachweise, externe Freigaben importieren, fremde Folgeanträge und Mitgliederaktivität ansehen. | [ngo.tsx](../../web/v3/ngo.tsx), [API](../../server/app.ts) |
+| `/?v3=1&ngo=1` → `#/ngo` | Eigener NGO-Anmeldebildschirm und NGO-Arbeitsbereich: Fondsübersicht, Antragsassistent und Vorschau, Reservierungen/Abruf, Nachweise, externe Freigaben importieren, fremde Folgeanträge und Mitgliederaktivität ansehen. | [ngo.tsx](../../web/v3/ngo.tsx), [API](../../server/app.ts) |
 | `/?v2=1` | Erhaltene V2-Demo mit den älteren Förderkurven; unabhängig vom V3-Arbeitsablauf. V1 bleibt unter `/?legacy=1`. | [web/main.tsx](../../web/main.tsx), [V2-Anleitung](../V2.md) |
 
-Die drei V3-Ansichten haben eigene Routen und Komponenten, teilen aber dieselbe Web-App, Einstellungen und Backend-Infrastruktur. Die Demo ist ein eigener Einstieg. Es gibt **kein Prüferportal mehr**. Alte Links `#public`, `#ngo` und `#alliance-local-alliance` werden weiter aufgelöst; `#review` zeigt einen Hinweis zum externen Prüfablauf.
+V3-Startseite, Organisationsdetail und NGO-Arbeitsbereich teilen dieselbe Web-App, Einstellungen und Backend-Infrastruktur. Die gemeinsame Kopf-Navigation **Demo · NGO · User** verbindet die V2-Demo, den NGO-Einstieg und die öffentliche V3-Startseite; die aktive Ansicht ist unterstrichen. Organisationsdetails gehören zu User. Links wechseln nur die Ansicht, ohne NGO-Sitzungen abzumelden. Auch vor der NGO-Anmeldung und auf Fehlerseiten bleibt die Navigation verfügbar. Umsetzung: [ViewNavigation](../../web/view-navigation.tsx), [V3-App](../../web/v3/app.tsx), [V2-Demo](../../web/portal.tsx). Öffentliche alte NGO-Hashlinks werden zum NGO-Einstieg weitergeleitet. Es gibt **kein Prüferportal mehr**. Alte Links `#public`, `#ngo` und `#alliance-local-alliance` werden weiter aufgelöst; `#review` zeigt einen Hinweis zum externen Prüfablauf.
 
-Das Zahnrad öffnet Sprache, Land, Zeitzone, Währung, Theme, simulierte NGO-Anmeldung und Browserwallet-Verbindung. Die Browserwallet zeigt derzeit nur ihre Adresse an. Sie wird dadurch weder zum Spenderkonto noch zur NGO-Identität.
+Das Zahnrad öffnet Sprache, Land, Zeitzone, Währung, Theme und Browserwallet-Verbindung. NGO-Anmeldung erfolgt ausschließlich im eigenen Einstieg; dort gibt es Abmeldung und Rückkehr zur Öffentlichkeit. Öffentlich bleibt bei aktiver NGO-Sitzung eine Abmeldeaktion verfügbar. Die Browserwallet zeigt derzeit nur ihre Adresse an. Sie wird dadurch weder zum Spenderkonto noch zur NGO-Identität.
 
 ### Was bedeutet „bisher unterstützt“?
 
 Die Anzeige gehört dem **gemeinsamen lokalen Testkonto 0**, nicht einem persönlich angemeldeten Nutzer. Sie enthält dessen bestätigte Einzahlungen einschließlich Initialfinanzierung. Einzelne NGO-Auszahlungen können nicht einzelnen Spenden zugerechnet werden.
 
-Es existiert nur ein reales Bündnis im lokalen Register. Die Oberfläche erfindet keine weiteren Organisationen. Ohne aktuellen vollständigen Index bleibt der Unterstützungsstatus unbekannt. Die öffentliche Testspende beträgt höchstens 1.000 dUSD je Vorgang; dafür muss eine laufende NGO-Sitzung beendet werden.
+Das Ringdiagramm summiert `support.total` aus `/api/v3/organizations` mit ganzzahligen Token-Untereinheiten und zeigt Name, dUSD-Betrag, gerundeten Anteil und Gesamtsumme. Es zeigt Einzahlungen, keine verbleibenden Guthaben. Aktuell erscheint das einzige registrierte Bündnis bei positivem Gesamtbetrag mit 100 %; seine drei NGOs werden nicht künstlich aufgeteilt.
+
+Bei Nullsumme bleibt der Ring neutral. Fehlende Organisationen, Laden, Ladefehler und veralteter/unverfügbarer Index haben eigene Hinweise; bei unvollständiger Datenlage gibt es keine Teilverteilung. Gemint allein erhöht die Anzeige nicht. Nächster Schritt: nach Indexbestätigung „Aktualisieren“ wählen oder über den Bündnisnamen die Details öffnen. Ansehen und Aktualisieren benötigen keine Anmeldung oder Prüferfreigabe.
+
+Es existiert nur ein reales Bündnis im lokalen Register. Die Oberfläche erfindet keine weiteren Organisationen. Ohne aktuellen vollständigen Index bleibt der Unterstützungsstatus unbekannt. Eine aktive NGO-Sitzung bleibt beim Öffnen öffentlicher Links einschließlich der Kopf-Navigation bestehen; Abmelden und Rückkehr beendet sie ausdrücklich. Die öffentliche Testspende beträgt höchstens 1.000 dUSD je Vorgang; dafür muss eine laufende NGO-Sitzung beendet werden.
 
 ## 3. Wer darf was entscheiden?
 
@@ -65,7 +69,7 @@ flowchart TD
     M --> N[NGO importiert: akzeptiert, nachgefordert oder abgelehnt]
 ```
 
-1. **Bedarf und Antrag:** Die NGO meldet sich über das Zahnrad an, startet den Antragsassistenten und nennt Einsatz, Betrag, Kapazität, externe Finanzierung und Begründung. Die Vorschau zeigt Maximum, Restanspruch, geschätzten Rundenanteil und etwaige Sperren. Sie reserviert kein Geld.
+1. **Bedarf und Antrag:** Die NGO meldet sich über den eigenen NGO-Einstieg an, startet den Antragsassistenten und nennt Einsatz, Betrag, Kapazität, externe Finanzierung und Begründung. Die Vorschau zeigt Maximum, Restanspruch, geschätzten Rundenanteil und etwaige Sperren. Sie reserviert kein Geld.
 2. **Antrag extern freigeben:** Der Prüfauftrag wird exportiert, zwei Datenprüfer signieren ihn außerhalb der App, die NGO importiert das vollständige JSON-Paket. Der Server prüft es und übermittelt den Contract-Aufruf. Ein eröffneter Antrag ist noch keine Auszahlung.
 3. **Runde freigeben:** Der Betreiber bereitet die gemeinsame Verteilung vor. Zwei Datenprüfer signieren den gesamten Snapshot. Eine NGO darf ihn importieren, wenn er einen eigenen Grant enthält. Zwischenzeitliche Änderungen an Budget, Reservierungen oder Ablauf können eine neue Runde und neue Signaturen erfordern.
 4. **Abrufen:** Nach der Reservierung ruft die NGO innerhalb von 24 Stunden ab. Das Geld geht an ihre feste Adresse. Nach Ablauf können ungenutzte Reservierungen wieder freigegeben werden.
@@ -92,6 +96,7 @@ Auch in einem akuten Notfall bleibt die externe Freigabe von Antrag und Runde er
 |---|---|---|
 | Entdeckung und Organisationen | Horizontale Karten mit ca. zehnsekündigem Bildwechsel und Kurztext; Bereich für noch nicht unterstützte Bündnisse. Genau ein registriertes Bündnis. Bilder sind lokale synthetische Illustrationen. | [home.tsx](../../web/v3/home.tsx), [components.tsx](../../web/v3/components.tsx), [organizations.ts](../../server/organizations.ts) |
 | Fondsübersicht und Aktivität | Fondsvolumen, reservierte/freie Mittel, Mitglieder und normalisierte Chain-Ereignisse; Aktivität seitenweise mit 25 Einträgen. Kein persönliches Spenderportfolio. | [organization.tsx](../../web/v3/organization.tsx), [API](../../server/app.ts), [Organisationstypen](../../src/v3/ui-types.ts) |
+| Testeinzahlungsdiagramm | Ring und zugängliche Werteliste auf der User-Startseite; kumulierte Einzahlungen des gemeinsamen Testkontos inklusive Initialfinanzierung, keine persönlichen Guthaben. Nur vollständiger aktueller Index; DE/EN, RTL, mobil untereinander, ohne Animation. | [support-allocation.tsx](../../web/v3/support-allocation.tsx), [Kontext](../../web/v3/context.tsx), bestehende Organisations-API |
 | Testspenden | Initial 18.000 dUSD im Fonds und weitere 18.000 beim Testspender; maximal 1.000 pro API-Spende. Browserwallet-Verbindung ändert den Geldgeber nicht. | API `/donations`, Contract `deposit`, [Token](../../contracts/DemoUSDV3.sol) |
 | Bedarfsschätzung | Schätzt 30-Tage-Bedarf anhand ähnlicher Ereignisse, erklärt Spanne/Sensitivität. 18 synthetische Vergleichsfälle; mindestens zehn geeignete unabhängige Ereignisse nötig. Ohne Grundlage nur manueller Prüfvorschlag. | [model.ts](../../src/v3/model.ts): `estimate`, `backtest`; [service.ts](../../server/service.ts): `model` |
 | Antragsvorschau | Zeigt vorgeschlagenes Maximum, Restanspruch und geschätzte Auszahlung mit derselben Allokationslogik wie die Runde. Keine Zusage oder Reservierung. | [preview.ts](../../server/preview.ts), Service `allocationSnapshot`, NGO-Assistent |
@@ -107,7 +112,7 @@ Auch in einem akuten Notfall bleibt die externe Freigabe von Antrag und Runde er
 | Optionale Live-Abfragen | USGS/EONET-HTTP bei `V3_LIVE_SOURCES=1`, ohne Airnode-Signatur; standardmäßig offline. Weitere Quellen nur im Register, keine vollständige globale Überwachung. | [worker.ts](../../server/worker.ts), Quellenadapter und [Register](../../fixtures/v3/data-register.json) |
 | Persistenz und Indexer | Anträge und Dateien bleiben erhalten. Logs/Checkpoint konsistent gespeichert; Fondskennzahlen vom gleichen bestätigten Block. Reorgs werden beim nächsten Indexlauf rekonstruiert. | [store.ts](../../server/store.ts), Worker, `organizations.ts` |
 | Status und Erinnerungen | Zeigt lokale Betriebsfehler und Fristerinnerungen. Kein Nachrichtenversand. | Worker und API |
-| Sprache, Theme und Bedienung | 39 Sprachoptionen, RTL, 51 Länder, unabhängige Zeitzone/Währung/Theme. DE/EN gepflegt; neue Texte sonst sichtbar englisch, 37 ältere Übersetzungen ungeprüft. Bildpause, Tastaturbedienung und Dialogfokus vorhanden. | [copy.ts](../../web/v3/copy.ts), [i18n.ts](../../web/v3/i18n.ts), Komponenten und Styles |
+| Sprache, Theme und Bedienung | 39 Sprachoptionen, RTL, 51 Länder, unabhängige Zeitzone/Währung/Theme. DE/EN gepflegt; neue Texte sonst sichtbar englisch, 37 ältere Übersetzungen ungeprüft. Bildpause, Tastaturbedienung und Dialogfokus vorhanden. Gemeinsame Demo/NGO/User-Links mit aktivem Zustand, sichtbarem Fokus und mindestens 44-px-Touchflächen; Diagrammwerte auch ohne Farben/Grafik lesbar. | [copy.ts](../../web/v3/copy.ts), [i18n.ts](../../web/v3/i18n.ts), Komponenten und Styles |
 | Währungsanzeige | Ohne datierten Kurs bleibt andere Modellwährung unbekannt; kein Live-FX und keine dUSD-/Fiat-Umrechnung. | Modell/Formatierung; synthetischer Referenzbetrag ist eine Förderregel |
 
 ## 6. Welche Grenzen und Fristen gelten?
@@ -161,12 +166,14 @@ Die Datenbank ist für App-Zustand und Ansichten relevant; der Contract prüft d
 
 Normale Neustarts erhalten Datenbank, Dateien und Chain über Docker-Volumes. Sitzungen und Einmallinks verfallen bei Serverneustart. Private Schlüssel liegen in `.runtime/`; verlorene Dateischlüssel machen verschlüsselte Originale unlesbar. Das lokale Authentifizierungs-/Schlüsselkonzept ist nicht für Produktion freigegeben.
 
+**Lokaler Start ohne erneute Cloud-Abhängigkeitssuche:** Der Betreiber verwendet `npm run v3:start`; das prüft vor Docker und Backend die Abhängigkeiten und installiert nur bei Änderungen oder fehlendem Cache. `npm run install:local` installiert Registry-Pakete außerhalb des Desktop-Ordners in einen lokalen Benutzer-Cache und verlinkt `node_modules`. Alte Ordner bleiben unter `.dependency-backups.noindex/` erhalten; Vite schließt Sicherungen aus. Keine NGO-/Prüferfreigabe erforderlich, keine Änderung der Geldregeln. Direktes `npm ci` kann den Link wieder entfernen; Betriebssystem-/Netzwerkausfälle und Cloud-Probleme anderer Projektdateien bleiben möglich. Grenzen und nächster Schritt: [Betriebsanleitung](LOCAL.md#abhängigkeiten-ohne-cloud-blockade). Umsetzung: [Installer](../../scripts/install-local.mjs), [Vite](../../vite.config.ts). Die neu ausgeführten Prüfungen für diese Infrastrukturänderung werden gesondert in [VERIFICATION.md](VERIFICATION.md) dokumentiert.
+
 Umsetzung: [Docker-Konfiguration](../../compose.v3.yaml), [Start](../../src/v3/start.ts), [Backend](../../server/main.ts), [Chain-Anbindung](../../src/v3/chain.ts), [Speicher](../../server/store.ts).
 
 ## 8. Was fehlt noch?
 
 - Dynamische Aufnahme neuer Bündnisse, NGOs und Notfälle; derzeit festes Register, Registrywechsel erfordert einen neuen isolierten Fonds.
-- Persönliche Spenderkonten und tatsächliche Spenden aus der verbundenen Browserwallet; der dargestellte Verlauf gehört dem gemeinsamen Testkonto.
+- Persönliche Spenderkonten und tatsächliche Spenden aus der verbundenen Browserwallet; der dargestellte Verlauf und das Ringdiagramm gehören dem gemeinsamen Testkonto. Das Diagramm ergänzt weder individuelle Guthaben noch eine Zuordnung von Spenden zu NGO-Auszahlungen.
 - Sofortauszahlung ohne externe Prüferfreigabe; die UI-Änderung hat die Quoren nicht aufgehoben.
 - Ein belegtes reales vergleichbares 30-Tage-Ausgabenkorpus und fachliche Validierung des Modells.
 - Unabhängige reale NGOs/Prüfer und geeignete Identitäts-, Schlüssel- und Betriebsprozesse. Lokale CLI-Signaturen demonstrieren nur den Mechanismus.

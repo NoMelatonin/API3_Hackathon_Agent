@@ -1,0 +1,72 @@
+:root {
+  color-scheme: light;
+  --bg: #f3f4f5;
+  --surface: #fff;
+  --raised: #e9ebed;
+  --text: #111;
+  --muted: #5b6068;
+  --line: #d4d7da;
+  --accent: #a3e635;
+  --accent-hover: #8dd51e;
+  --on-accent: #111;
+  --chart: #508900;
+  --focus: #5630c5;
+  --error: #a02b19;
+  --warning-bg: #fff4dc;
+  --warning-line: #a46e00;
+}
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #080808;
+  --surface: #141414;
+  --raised: #202020;
+  --text: #f5f5f5;
+  --muted: #b3b3b3;
+  --line: #383838;
+  --accent: #f5f5f5;
+  --accent-hover: #dedede;
+  --on-accent: #111;
+  --chart: #b49aff;
+  --focus: #b49aff;
+  --error: #ffb4b8;
+  --warning-bg: #302619;
+  --warning-line: #e8b76a;
+}
+.demo-app {
+  background: var(--bg);
+  color: var(--text);
+}
+.demo-app .brand-dot {
+  background: var(--accent);
+}
+[data-theme='dark'] .demo-app .brand-dot {
+  background: var(--focus);
+}
+.demo-app .primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.demo-app .campaigns button[aria-pressed='true']:hover:not(:disabled) {
+  background: var(--text);
+  color: var(--bg);
+}
+.demo-app .legacy-theme {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 8px 20px;
+  background: var(--surface);
+  color: var(--text);
+  font: 12px system-ui;
+  border-bottom: 1px solid var(--line);
+}
+.demo-app .legacy-theme label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+}
+.demo-app .legacy-theme select {
+  padding: 4px;
+  width: auto;
+}

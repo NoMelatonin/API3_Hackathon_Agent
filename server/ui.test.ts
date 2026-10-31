@@ -105,6 +105,15 @@ test('browser session boundary lists only NGOs and rejects every reviewer group'
       payload: { amount: '1' },
     });
     assert.equal(donation.statusCode, 403);
+    for (const sessionCookie of [cookie, cookie, 'v3_session=expired']) {
+      const logout = await app.inject({
+        method: 'DELETE',
+        url: '/api/v3/session',
+        headers: { ...headers, cookie: sessionCookie },
+      });
+      assert.equal(logout.statusCode, 200);
+      assert.match(String(logout.headers['set-cookie']), /Max-Age=0/);
+    }
   } finally {
     await app.close();
   }

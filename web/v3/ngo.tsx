@@ -437,14 +437,7 @@ export function NGOPage() {
   const [wizard, setWizard] = useState(false),
     [importStatus, setImportStatus] = useState('');
   useEffect(() => setWizard(false), [portal?.role.id]);
-  if (!portal)
-    return (
-      <section className="hero">
-        <p className="eyebrow">NGO WORKSPACE</p>
-        <h1>{tr('your_response_starts_here')}</h1>
-        <p>{tr('choose_a_simulated_ngo_in_settings_to')}</p>
-      </section>
-    );
+  if (!portal) return null;
   const pending = portal.evidence.filter((e) => ![2, 6].includes(e.status));
   const completed = portal.evidence.filter((e) => [2, 6].includes(e.status));
   async function exportFile(purpose: string, target: string) {

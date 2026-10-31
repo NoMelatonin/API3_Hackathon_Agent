@@ -1,6 +1,7 @@
 import React from 'react';
 import { useUI } from './context.tsx';
 import { OrganizationScroller } from './components.tsx';
+import { SupportAllocation } from './support-allocation.tsx';
 export function HomePage() {
   const { organizations, tr, loaded } = useUI();
   const unknown =
@@ -15,6 +16,7 @@ export function HomePage() {
         <h1>{tr('make_relief_possible_together')}</h1>
         <p>{tr('discover_organizations_whose_ngos_share_a_relief')}</p>
       </section>
+      <SupportAllocation />
       <OrganizationScroller
         organizations={organizations}
         label={tr('discover_organizations')}

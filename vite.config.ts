@@ -1,7 +1,11 @@
 import { defineConfig } from 'vite';
 export default defineConfig({
+  optimizeDeps: { entries: ['index.html'] },
   server: {
     host: '127.0.0.1',
+    watch: {
+      ignored: ['**/.dependency-backups.noindex/**', '**/node_modules.stalled-*/**'],
+    },
     fs: {
       strict: true,
       deny: [
@@ -14,6 +18,8 @@ export default defineConfig({
         '**/.aws/**',
         '**/.codex/**',
         '**/.agents/**',
+        '**/.dependency-backups.noindex/**',
+        '**/node_modules.stalled-*/**',
       ],
     },
     proxy: {

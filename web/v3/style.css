@@ -615,3 +615,44 @@ body {
   height: 24px;
   margin: 0;
 }
+
+.ngo-entry { max-width: 720px; margin-inline: auto; }
+.ngo-entry .panel { margin-block: 24px; }
+.ngo-entry select { margin-block: 8px 20px; }
+/* NGO identity and explicit exit actions must also fit narrow screens. */
+.v3-header nav { flex-wrap: wrap; }
+.v3-header nav > span { overflow-wrap: anywhere; }
+
+/* Consistent view links with independent session actions. */
+.v3-header { flex-wrap: wrap; }
+.v3-header .view-navigation { gap: 8px; }
+.v3-header .view-navigation a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 12px; border-radius: 8px; }
+.v3-header .view-navigation a[aria-current='page'] { background: var(--raised); font-weight: 700; text-underline-offset: 6px; }
+.ngo-session-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.ngo-session-actions > span { overflow-wrap: anywhere; }
+.v3-app {
+  --allocation-0: #508900; --allocation-1: #5630c5; --allocation-2: #007c91;
+  --allocation-3: #b34d00; --allocation-4: #a0256e; --allocation-5: #526274;
+}
+[data-theme='dark'] .v3-app {
+  --allocation-0: #b49aff; --allocation-1: #a3e635; --allocation-2: #65d5e5;
+  --allocation-3: #ffb86b; --allocation-4: #f49acb; --allocation-5: #a9bdd5;
+}
+.allocation-layout { display: grid; grid-template-columns: minmax(160px, 240px) minmax(0, 1fr); align-items: center; gap: 32px; margin-block: 24px; }
+.allocation-donut { width: 100%; max-width: 240px; justify-self: center; }
+.allocation-track { stroke: var(--raised); }
+.allocation-explanation { color: var(--muted); }
+.allocation-details { min-width: 0; }
+.allocation-total { display: flex; flex-direction: column; gap: 4px; }
+.allocation-total strong { font-size: clamp(24px, 3vw, 36px); overflow-wrap: anywhere; }
+.allocation-list { list-style: none; padding: 0; margin: 0; }
+.allocation-list li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding-block: 14px; border-bottom: 1px solid var(--line); }
+.allocation-list a { overflow-wrap: anywhere; }
+.allocation-swatch { width: 12px; height: 12px; border-radius: 50%; }
+.allocation-value { display: flex; flex-direction: column; text-align: end; }
+@media (max-width: 767px) {
+  .v3-header .view-navigation { width: 100%; margin-inline-start: 0; }
+  .allocation-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .allocation-list li { grid-template-columns: 12px minmax(0, 1fr); }
+  .allocation-value { grid-column: 2; text-align: start; overflow-wrap: anywhere; }
+}

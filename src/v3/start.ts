@@ -8,6 +8,7 @@ async function run(command: string, args: string[]) {
     );
   });
 }
+await run('node', ['scripts/install-local.mjs']);
 await run('docker', ['compose', '-f', 'compose.v3.yaml', 'up', '-d', '--wait']);
 await run('npm', [
   'run',

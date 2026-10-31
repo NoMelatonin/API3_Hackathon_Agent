@@ -31,3 +31,15 @@ P0–P6 are implemented and verified for the explicitly simulated local scope. S
 ## UI evolution
 
 The `disasterdao-shared-fund-ui-improvements` branch adds separate discovery, organization and NGO surfaces and external signature imports. Browser reviewer sessions are disabled; quorum requirements remain unchanged. See [UI.md](UI.md) for current routes, APIs, data boundaries and operator commands. Earlier portal descriptions above describe the original delivered baseline.
+
+## Local dependency storage (2026-10-31)
+
+The V3 launcher first runs `scripts/install-local.mjs`. Registry dependencies are installed from the existing lockfile into a per-project local user cache, then exposed through a project `node_modules` symlink. The installer reuses a fingerprinted successful installation, serializes its own invocations, retains the current link on installation failure, and quarantines old directories without traversing cloud placeholders. Vite limits dependency discovery to `index.html` and excludes/denies dependency backups. This changes local tooling only; role, financial and persistence rules are unchanged. Plain `npm ci` can remove the link; use `npm run install:local` and see [LOCAL.md](LOCAL.md#abhängigkeiten-ohne-cloud-blockade) for limits.
+
+## Shared navigation and test deposit allocation (2026-10-31)
+
+`web/view-navigation.tsx` supplies Demo/NGO/User anchors to the V2 and V3 headers. Existing query entries, hash routes, session persistence and explicit logout actions remain in use. No router or public API changes.
+
+`web/v3/support-allocation.tsx` consumes the existing `Organization[]` context and `support.total` projection from `server/organizations.ts`. It sums integer token units with BigInt, renders a static SVG donut plus a semantic value list, and uses existing localized dUSD formatting. The source is cumulative confirmed deposits of shared test account 0, including initial funding, not personal or remaining balances. The current single alliance produces one 100% segment; member NGOs are not donor allocations. Rounded percentages carry a rounding notice.
+
+The context exposes organization loading/ready/error state independently of session loading, with request ordering protection for the organization response. Failed refreshes and any stale/unavailable snapshot suppress the allocation instead of displaying partial totals. Empty registry and zero deposits are distinct. No changes to backend contracts, financial rules, role permissions or wallet identity. Current verification is recorded separately in VERIFICATION.md.

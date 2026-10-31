@@ -4,14 +4,37 @@ Für den verständlichen Gesamtüberblick: [V3-Landkarte](LANDKARTE.md).
 
 Implementierung auf `disasterdao-shared-fund-ui-improvements`. Das bestehende lokale Deployment bleibt erhalten; die Contracts wurden nicht geändert. Alle Konten, NGOs, Dokumente und Modellwerte bleiben synthetisch.
 
+
+Lokaler Start: `npm run v3:start` prüft und installiert Abhängigkeiten bei Bedarf außerhalb des synchronisierten Desktop-Ordners. Für eine manuelle Installation `npm run install:local` verwenden. [Cloud-Blockade und Wiederherstellung](LOCAL.md#abhängigkeiten-ohne-cloud-blockade).
+
+## Separater NGO-Einstieg und Demo-Theme (31.10.2026)
+
+Öffentlichkeit: `/?v3=1#/home`. NGO-Zugang: `/?v3=1&ngo=1`; nach simulierter Anmeldung öffnet sich `/?v3=1&ngo=1#/ngo`. Alte Links `#ngo` und `#/ngo` wechseln automatisch zum eigenen Einstieg. Die Anmeldung gehört nicht mehr zum öffentlichen Einstellungsdialog. Einstellungen für Sprache und Theme bleiben gemeinsam gespeichert.
+
+Eine gültige NGO-Sitzung wird wiederverwendet. „Abmelden“ öffnet die NGO-Anmeldung; „Abmelden und zur Öffentlichkeit“ beendet die Sitzung und öffnet die öffentliche Startseite. Öffentliche Links einschließlich der Kopf-Navigation beenden keine Sitzung; Testspenden bleiben dann gesperrt. Der öffentliche Einstellungsdialog bietet eine Abmeldeaktion. Ein Sessionfehler zeigt Wiederholen; abgelaufene Sitzungen entfernen private Ansichten. Bei Tab-Fokus wird die Session erneut geprüft. Ein abgelaufenes Cookie kann durch Abmelden gelöscht werden.
+
+Die Trennung ist eine UI-Trennung innerhalb derselben App und API, keine neue Identitätsprüfung. Acht-Stunden-Cookie, feste NGO-Rollen, gemeinsames Testspenderkonto und externe Signaturfreigaben bleiben erhalten. Umsetzung: `web/v3/app.tsx`, `web/v3/ngo-entry.tsx`, `server/app.ts`.
+
+Die V2-Demo (auch `?local=1`) verwendet `web/demo-theme.css` und tokenisierte Komponentenfarben in `web/style.css`. Dark Mode: `#080808`/`#141414`/`#202020`, helle Hauptaktionen und violette Diagramme/Fokuszustände. Light Mode behält limettengrüne Akzente. V3 verwendet weiterhin eigene Tokens; V1 behält `web/theme-legacy.css` und `web/theme.css`. Der Speicherschlüssel `v3-theme` bleibt gemeinsam.
+
+## Navigation und Testeinzahlungen (31.10.2026)
+
+Alle drei Einstiege zeigen dieselbe Kopf-Navigation **Demo · NGO · User** mit aktivem Zustand. Demo öffnet `/?v2=1`, NGO `/?v3=1&ngo=1`, User `/?v3=1#/home`; die lokale V2-Variante zählt ebenfalls als Demo. Organisationsdetails und öffentliche Fehlerseiten zählen als User. Die Links erhalten NGO-Sitzungen; Abmelden bleibt eine eigene Aktion. Umsetzung: `web/view-navigation.tsx`, `web/portal.tsx`, `web/v3/app.tsx`.
+
+Unter der Einleitung der User-Startseite zeigt `web/v3/support-allocation.tsx` ein Ringdiagramm mit zugänglicher Liste, Bündnisnamen, dUSD-Beträgen, Prozentanteilen und Gesamtbetrag. Grundlage ist ausschließlich `Organization.support.total` aus der vorhandenen Organisationsabfrage: bestätigte kumulierte Einzahlungen des gemeinsamen lokalen Testkontos 0 inklusive Initialfinanzierung. Summierung erfolgt mit BigInt; Prozentwerte sind auf eine Nachkommastelle gerundet, mögliche Summenabweichungen werden genannt. Keine neuen API-Endpunkte, persönlichen Guthaben, Fiat-Umrechnung oder erfundenen Organisationen. Das einzige Bündnis ergibt bei positivem Betrag 100 %; seine Mitglieds-NGOs erhalten keine erfundene Aufteilung.
+
+Laden, keine Organisationen, Nullsumme und Ladefehler haben eigene Zustände. Sobald ein Organisationssnapshot veraltet oder unverfügbar ist, wird keine Gesamtverteilung angezeigt. Ein fehlgeschlagener Abruf unterdrückt auch zuvor geladene Diagrammwerte. „Aktualisieren“ verwendet den bestehenden Refresh; eine geminte Spende verändert die Werte erst nach Aufnahme in den bestätigten Index. Der Bündnisname öffnet die vorhandene Detailroute. Keine Anmeldung oder Freigabe fürs Ansehen erforderlich.
+
+Desktop: Ring und Liste nebeneinander; mobil untereinander. Namen umbrechen, Navigation bleibt per Tastatur erreichbar und hat mindestens 44-px-Touchflächen. Die statische SVG-Grafik ist für Screenreader verborgen; sämtliche Werte stehen in der semantischen Liste. Keine Hover-Pflicht, keine Animation; Hell/Dunkel und RTL nutzen die bestehenden Einstellungen. Neue Texte sind DE/EN gepflegt, andere Sprachen verwenden sichtbar englisches Fallback.
+
 ## Einstieg und Daten
 
-- `/?v3=1#/home` beziehungsweise `/`: Organisationen entdecken, Testspende und Einstellungen.
+- `/?v3=1#/home` beziehungsweise `/`: User: Organisationen entdecken, Testeinzahlungsverteilung, Testspende und Einstellungen.
 - `/?v3=1#/organizations/local-alliance`: Bündnis, drei Mitglieds-NGOs, Fonds und Unterstützungsverlauf des gemeinsamen Testkontos.
-- `/?v3=1#/ngo`: simulierte NGO-Sitzung, Vorschau/Antrag, Reservierungen, Nachweise, externe Signaturimporte und Fondsaktivität.
+- `/?v3=1&ngo=1`: eigener NGO-Anmeldebildschirm; `/?v3=1&ngo=1#/ngo`: simulierte NGO-Sitzung, Vorschau/Antrag, Reservierungen, Nachweise, externe Signaturimporte und Fondsaktivität.
 - `/?v2=1`: bestehende V2-Demo; V1 bleibt unter `/?legacy=1`.
 
-Alte Hashlinks `#public`, `#ngo` und `#alliance-local-alliance` werden weiterhin verstanden. `#review` erklärt den externen Ablauf. Die NGO-Anmeldung im Zahnrad erlaubt nur NGO-Rollen. Die festen Prüferidentitäten existieren weiterhin für externe lokale Werkzeuge; sie können keine Browsersitzung eröffnen.
+Alte Hashlinks `#public`, `#ngo` und `#alliance-local-alliance` werden weiterhin verstanden. `#review` erklärt den externen Ablauf. Die Anmeldung im eigenen NGO-Einstieg erlaubt nur NGO-Rollen. Die festen Prüferidentitäten existieren weiterhin für externe lokale Werkzeuge; sie können keine Browsersitzung eröffnen.
 
 Es existiert genau ein Bündnis. Die Listen erfinden keine weiteren Organisationen. Ein noch nicht unterstütztes Bündnis kann sowohl in der allgemeinen Entdeckung als auch im unteren Bereich erscheinen. Bei fehlendem/veraltetem Index bleibt sein Unterstützungsstatus unbekannt.
 
