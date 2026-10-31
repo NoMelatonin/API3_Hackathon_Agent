@@ -1,5 +1,7 @@
 # V3: getrennte Oberflächen und externe Freigaben
 
+Für den verständlichen Gesamtüberblick: [V3-Landkarte](LANDKARTE.md).
+
 Implementierung auf `disasterdao-shared-fund-ui-improvements`. Das bestehende lokale Deployment bleibt erhalten; die Contracts wurden nicht geändert. Alle Konten, NGOs, Dokumente und Modellwerte bleiben synthetisch.
 
 ## Einstieg und Daten

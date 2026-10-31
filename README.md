@@ -2,6 +2,8 @@
 
 ## V3: lokaler gemeinsamer Fonds und getrennte Oberflächen
 
+**V3 verstehen:** [Landkarte der Funktionen, Rollen, Abläufe und groben Umsetzung](docs/v3/LANDKARTE.md).
+
 Auf `disasterdao-shared-fund-ui-improvements`: getrennte Entdeckung, Organisationsdetail und NGO-Arbeitsbereich; gemeinsamer Fonds, externe 2/3-Signaturfreigaben, proportionale Förderrunden, kumulative Tranchen und private Nachweise. PostgreSQL und verschlüsselter privater S3-Speicher laufen lokal; 39 UI-Sprachen und System/Hell/Dunkel sind enthalten.
 
 ```sh

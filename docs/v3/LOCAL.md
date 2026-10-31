@@ -1,5 +1,7 @@
 # DisasterDAO V3 — lokaler Gesamtprototyp
 
+Zum Verständnis von Funktionen, Rollen und Umsetzung: [V3-Landkarte](LANDKARTE.md).
+
 > Aktueller UI-Ablauf auf `disasterdao-shared-fund-ui-improvements`: [getrennte Oberflächen und externe Signaturfreigaben](UI.md). Das frühere Prüferportal und dessen Browser-Anmeldung sind entfernt. Die untenstehenden Prüferportal-Schritte dokumentieren den vorherigen Ablauf; Freigaben werden jetzt extern vorbereitet, signiert und durch NGOs importiert.
 
 V3 ergänzt V1/V2 auf `feat/disasterdao-shared-fund`. Es gibt keine Migration oder Änderung öffentlicher Verträge. Alle Organisationen, Prüfer, Einsatzpakete, Dokumente, Ergebnisse und Kostenbeispiele sind simuliert. Unterschiedliche lokale Schlüssel demonstrieren Zuständigkeiten; sie belegen keine institutionelle Unabhängigkeit.

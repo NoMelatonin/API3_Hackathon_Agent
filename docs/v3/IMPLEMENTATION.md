@@ -1,5 +1,7 @@
 # V3 local shared fund — implementation contract
 
+Current functionality overview in German: [V3-Landkarte](LANDKARTE.md). The original delivery stages below remain historical; current external approval workflows are documented in [UI.md](UI.md).
+
 Approved scope: local prototype, branch feat/disasterdao-shared-fund, based on e7bb4b8. V1/V2 source, artifacts, deployments and original Airnode response bytes remain unchanged. No migration, production deployment, paid query, video or publication.
 
 ## Parameters (policy v3.1)
