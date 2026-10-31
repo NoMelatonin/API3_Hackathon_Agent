@@ -23,18 +23,16 @@ export async function tick(
     const c = await chain();
     const tip = await client.getBlockNumber({ cacheTime: 0 });
     const finalized = tip > 2n ? tip - 2n : 0n;
-    const abi = JSON.parse(
-      await readFile('out/DisasterFundV3Auto.sol/DisasterFundV3Auto.json', 'utf8'),
-    ).abi;
+    const abi = c.fundAbi;
     // Rebuild from deployment through confirmed tip. On this bounded local chain, replacement is cheap,
     // removes orphaned rows after any reorg and gives restart-idempotence without trusting a stale cursor.
     const logs: Log[] = [];
     for (
       let from = BigInt(c.config.deployedBlock);
       from <= finalized;
-      from += 1000n
+      from += 200n
     ) {
-      const to = from + 999n < finalized ? from + 999n : finalized;
+      const to = from + 199n < finalized ? from + 199n : finalized;
       logs.push(
         ...(await client.getLogs({
           address: c.config.fund,
@@ -131,7 +129,7 @@ export async function tick(
                 abi,
                 data: log.data,
                 topics: log.topics,
-              }) as { eventName: string; args: Record<string, unknown> },
+              }) as unknown as { eventName: string; args: Record<string, unknown> },
             },
           ];
         } catch {

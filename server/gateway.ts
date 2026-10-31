@@ -1,3 +1,4 @@
+import { profile } from '../src/v3/profile.ts';
 import Fastify from 'fastify';
 import { buildApp } from './app.ts';
 import { Database, Documents, localSecret } from './store.ts';
@@ -6,21 +7,24 @@ import { organizationIds, organizationScope } from '../src/v3/chain.ts';
 import { tick } from './worker.ts';
 
 export async function buildGateway() {
-  const backends = new Map<
-    string,
-    Awaited<ReturnType<typeof buildApp>>
-  >();
+  const backends = new Map<string, Awaited<ReturnType<typeof buildApp>>>();
   const databases = new Map<string, Database<State>>();
   for (const id of organizationIds)
     await organizationScope.run(id, async () => {
       const db = new Database<State>();
       await db.init(seed());
-      const docs = new Documents(await localSecret('documents-' + id));
+      const docs = new Documents(
+        await localSecret('integrated-' + profile + '-documents-' + id),
+      );
       await docs.init();
       databases.set(id, db);
       backends.set(
         id,
-        await buildApp(db, docs, await localSecret('sessions-' + id)),
+        await buildApp(
+          db,
+          docs,
+          await localSecret('integrated-' + profile + '-sessions-' + id),
+        ),
       );
     });
   const gateway = Fastify({ bodyLimit: 3 * 1024 * 1024 });
@@ -46,9 +50,7 @@ export async function buildGateway() {
           method: req.method as 'GET',
           url: req.url,
           headers,
-          ...(req.body === undefined
-            ? {}
-            : { payload: req.body as string }),
+          ...(req.body === undefined ? {} : { payload: req.body as string }),
         }),
       );
     if (
@@ -58,8 +60,7 @@ export async function buildGateway() {
       const key = path!.endsWith('/roles') ? 'roles' : 'organizations';
       const responses = await Promise.all(organizationIds.map(invoke));
       const failure = responses.find((r) => r.statusCode !== 200);
-      if (failure)
-        return reply.code(failure.statusCode).send(failure.json());
+      if (failure) return reply.code(failure.statusCode).send(failure.json());
       return {
         [key]: responses.flatMap((r) => r.json()[key]),
         simulation: true,
@@ -76,18 +77,14 @@ export async function buildGateway() {
         ? role.startsWith('community-')
           ? 'community-alliance'
           : 'local-alliance'
-        : (req.headers['x-v3-organization'] ??
-          cookie ??
-          'local-alliance'));
+        : (req.headers['x-v3-organization'] ?? cookie ?? 'local-alliance'));
     if (typeof id !== 'string' || !backends.has(id))
       return reply.code(404).send({ error: 'Organization not found' });
     const response = await invoke(id);
     for (const [key, value] of Object.entries(response.headers))
       if (
         value !== undefined &&
-        !['content-length', 'transfer-encoding', 'connection'].includes(
-          key,
-        )
+        !['content-length', 'transfer-encoding', 'connection'].includes(key)
       )
         reply.header(key, value);
     if (

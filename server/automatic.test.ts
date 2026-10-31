@@ -188,7 +188,7 @@ test(
         (await ok('GET', '/api/v3/portal', undefined, local)).evidence.length,
         0,
       );
-      await tc.increaseTime({ seconds: 21601 });
+      await tc.increaseTime({ seconds: 86401 });
       await tc.mine({ blocks: 1 });
       const followup = await ok(
         'POST',

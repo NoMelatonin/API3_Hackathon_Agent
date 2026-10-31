@@ -4,16 +4,16 @@ export function ViewNavigation({
   active,
   label,
 }: {
-  active: 'demo' | 'ngo' | 'user';
+  active: 'demo' | 'ngo' | 'user' | 'jury';
   label: string;
 }) {
   return (
     <nav className="view-navigation" aria-label={label}>
       {(
         [
-          ['demo', 'Demo', '/?v2=1'],
-          ['ngo', 'NGO', '/?v3=1&ngo=1'],
-          ['user', 'User', '/?v3=1#/home'],
+          ['jury', 'Jury', '/#/jury'],
+          ['ngo', 'NGO', '/?ngo=1#/ngo'],
+          ['user', 'User', '/#/home'],
         ] as const
       ).map(([view, name, href]) => (
         <a

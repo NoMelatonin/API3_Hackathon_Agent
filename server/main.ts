@@ -1,15 +1,18 @@
+import { apiPort, testnet } from '../src/v3/profile.ts';
 import { client } from '../src/v3/chain.ts';
 import { testActions } from 'viem';
 import { buildGateway } from './gateway.ts';
 const { app, work } = await buildGateway();
-await app.listen({ host: '127.0.0.1', port: 3007 });
-console.log('V3: two isolated local demo alliances, http://127.0.0.1:3007');
+await app.listen({ host: '127.0.0.1', port: apiPort });
+console.log(
+  `DisasterDAO: ${testnet ? 'Base Sepolia' : 'synthetic local demo'}, http://127.0.0.1:${apiPort}`,
+);
 await work();
 const timer = setInterval(work, 30000);
 // Explicit local demo clock. Regular workers never mine blocks or advance time.
 let clockBusy = false;
 const clock =
-  process.env.V3_DEMO_CLOCK === '1'
+  !testnet && process.env.V3_DEMO_CLOCK !== '0'
     ? setInterval(async () => {
         if (clockBusy) return;
         clockBusy = true;

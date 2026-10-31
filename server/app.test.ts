@@ -21,7 +21,7 @@ test(
   async () => {
     const base = new pg.Pool({
         connectionString:
-          'postgres://localdemo:localdemo-only@127.0.0.1:5437/disasterdao',
+          'postgres://localdemo:localdemo-only@127.0.0.1:5438/disasterdao',
       }),
       schema = `v3_test_${Date.now()}`;
     await base.query(`CREATE SCHEMA ${schema}`);
@@ -29,7 +29,7 @@ test(
     await db.pool.end();
     db.pool = new pg.Pool({
       connectionString:
-        'postgres://localdemo:localdemo-only@127.0.0.1:5437/disasterdao',
+        'postgres://localdemo:localdemo-only@127.0.0.1:5438/disasterdao',
       options: `-c search_path=${schema}`,
     });
     await db.init(seed());
@@ -44,7 +44,7 @@ test(
       promisify(execFile)(process.execPath, ['src/v3/approvals.ts', ...args], {
         env: {
           ...process.env,
-          V3_DATABASE_URL: `postgres://localdemo:localdemo-only@127.0.0.1:5437/disasterdao?options=-c%20search_path%3D${schema}`,
+          V3_DATABASE_URL: `postgres://localdemo:localdemo-only@127.0.0.1:5438/disasterdao?options=-c%20search_path%3D${schema}`,
         },
       });
     let cookie = '';
@@ -389,6 +389,29 @@ test(
         (await call('GET', '/api/v3/organizations/unknown')).statusCode,
         404,
       );
+      // Oracle reservation consumes another package of the SAME externally opened round.
+      const mixedChain = await chain();
+      const roundNonceBefore = await mixedChain.read('roundNonce');
+      const reservedBefore = await mixedChain.read('totalReserved');
+      await login('ngo-2');
+      const auto = await ok('POST', '/api/v3/automatic/submit', {
+        incident: 'demo-quake',
+        requested: '500000000',
+        capacity: '500000000',
+        external: '0',
+        explanation:
+          'Synthetic relief supplies through the same shared fund round.',
+        requestId: crypto.randomUUID(),
+      });
+      const mixed = await ok('POST', '/api/v3/automatic/reserve', {
+        application: auto.application,
+      });
+      assert.equal(await mixedChain.read('roundNonce'), roundNonceBefore);
+      assert.equal(await mixedChain.read('totalReserved'), reservedBefore);
+      await ok('POST', `/api/v3/reservations/${mixed.reservation}`, {
+        action: 'claim',
+      });
+      assert.equal(String(await mixedChain.read('totalPaid')), '1000000000');
     } finally {
       await tc.revert({ id: initial });
       await app.close();

@@ -6,7 +6,7 @@ import {
   type Hex,
 } from 'viem';
 import {
-  account,
+  roleAddress,
   chain,
   client,
   encode,
@@ -218,12 +218,21 @@ async function descriptor(s: State, purpose: string, target: string) {
     group = 'data';
     const d = s.coverageDecisions.find((d) => d.id === target);
     must(d, 'Coverage decision missing', 404);
-    payload = commitment({
+    const proof = commitment({
       id: d.id,
       areaId: d.areaId,
       reason: d.reason,
       time: d.time,
     }) as Hex;
+    const mask = s.incidents.reduce(
+      (mask, i, slot) => (i.areaId === d.areaId ? mask | (1 << slot) : mask),
+      0,
+    );
+    must(mask > 0, 'No registered incident in coverage area');
+    const expires = BigInt(d.time + 3600);
+    payload = encode('uint8,bytes32,uint256', [mask, proof, expires]);
+    fn = 'attestCoverage';
+    args = [mask, proof, expires];
   } else {
     const r = s.reviews.find(
       (r) => r.id === target && r.external && !r.superseded,
@@ -430,7 +439,7 @@ export async function importApproval(
     bundle.signatures,
     s.roles
       .filter((r) => r.kind === d.group)
-      .map((r) => ({ id: r.id, address: account(r.index).address })),
+      .map((r) => ({ id: r.id, address: roleAddress(r.index) })),
   );
   for (const v of voters)
     noConflict(
@@ -481,11 +490,11 @@ export async function importApproval(
   let tx: Hex | undefined;
   const tip = await client.getBlockNumber({ cacheTime: 0 });
   const hashes = new Set<Hex>();
-  for (let from = BigInt(c.config.deployedBlock); from <= tip; from += 1000n) {
+  for (let from = BigInt(c.config.deployedBlock); from <= tip; from += 200n) {
     for (const log of await client.getLogs({
       address: c.config.fund,
       fromBlock: from,
-      toBlock: from + 999n < tip ? from + 999n : tip,
+      toBlock: from + 199n < tip ? from + 199n : tip,
     }))
       hashes.add(log.transactionHash);
   }
@@ -553,6 +562,25 @@ export async function importApproval(
       const a = s.apps.find((a) => a.chainId === Number(g.application));
       if (a && a.status === 'reviewed') a.status = 'reserved';
     }
+  } else if (bundle.purpose === 'COVERAGE') {
+    const d = s.coverageDecisions.find((d) => d.id === bundle.target)!;
+    d.votes = voters;
+    const a = s.areas.find((a) => a.id === d.areaId)!;
+    const source = 'Documented 2/3 manual coverage decision ' + d.id;
+    if (!s.coverage.some((c) => c.source === source))
+      s.coverage.push({
+        source,
+        areaId: a.id,
+        areaVersion: a.version,
+        hazards: a.hazards,
+        start: d.time - 86400,
+        end: d.time,
+        checkedAt: d.time,
+        status: 'ok',
+        pages: 1,
+        complete: true,
+        observations: [],
+      });
   } else {
     const r = s.reviews.find((r) => r.id === bundle.target)!;
     r.tx = tx;

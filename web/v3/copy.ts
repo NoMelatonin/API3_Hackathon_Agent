@@ -123,8 +123,8 @@ export const copy = {
   page_not_found: ['Seite nicht gefunden', 'Page not found'],
   back_to_home: ['Zur Startseite', 'Back to home'],
   local_prototype_no_fiat_conversion_for_dusd: [
-    'Lokaler Prototyp · keine Fiat-Umrechnung von dUSD',
-    'Local prototype · no fiat conversion for dUSD',
+    'Testprototyp · keine Fiat-Umrechnung von dUSD',
+    'Test prototype · no fiat conversion for dUSD',
   ],
   settings: ['Einstellungen', 'Settings'],
   ngo_sign_in: ['NGO-Anmeldung', 'NGO sign-in'],

@@ -1,0 +1,94 @@
+{
+  "recipientBalanceBefore": "0",
+  "recipientBalanceAfter": "500000000",
+  "transferVerified": true,
+  "checkedAt": "2026-10-31T10:04:19.616Z",
+  "kind": "genuine-airnode-integrated-payout",
+  "historicalEvent": true,
+  "simulatedNGO": true,
+  "chainId": 84532,
+  "network": "Base Sepolia",
+  "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+  "token": "0x2bea3622c9c76c473ea974588e85b0bdb1af3e64",
+  "oracleVerifier": "0x8Df20BA332BD8eF588af73106Aad4Dd8CB934D79",
+  "activatedAt": "1793440312",
+  "original": "fixtures/integrated/usgs-reserve.json",
+  "applicationOriginal": "fixtures/integrated/usgs-valid.json",
+  "oldOriginal": "fixtures/integrated/usgs-old.json",
+  "otherOriginal": "fixtures/integrated/usgs-other-reserve.json",
+  "signedAt": "1793440982",
+  "ngo": "0x4cCd9E9853C963098B131978a699a1C03a1f5f89",
+  "amount": "500000000",
+  "application": "956492d4-1dd2-460f-b5e1-80ba1d0a2822",
+  "reservation": 1,
+  "transactions": {
+    "application": "0xedc5c4324787d605d9622f9c9073d5307bef70d07a4b1c30a685d564daf1ac13",
+    "reservation": "0xcdc08f6dcb81f744578d742940abd0030a87191cc820e72902015ab4a55530b1",
+    "payout": "0x39a398293c0c6e4a9bfa5b6b1f47560798ca9545d458e856c1db15c71dad2b4a"
+  },
+  "block": "52595953",
+  "receiptStatus": "success",
+  "tamper": {
+    "positive": {
+      "accepted": true,
+      "functionName": "automaticReserve",
+      "block": "52595931",
+      "execution": "eth_call",
+      "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+      "chainId": 84532,
+      "result": "1"
+    },
+    "results": [
+      {
+        "name": "edited-value",
+        "expected": "NotSignedByAirnode",
+        "accepted": false,
+        "functionName": "automaticReserve",
+        "block": "52595933",
+        "execution": "eth_call",
+        "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+        "chainId": 84532,
+        "revert": "NotSignedByAirnode",
+        "passed": true
+      },
+      {
+        "name": "too-old",
+        "expected": "OracleStale",
+        "accepted": false,
+        "functionName": "automaticReserve",
+        "block": "52595934",
+        "execution": "eth_call",
+        "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+        "chainId": 84532,
+        "revert": "OracleStale",
+        "passed": true
+      },
+      {
+        "name": "another-request",
+        "expected": "NotSignedByAirnode",
+        "accepted": false,
+        "functionName": "automaticReserve",
+        "block": "52595936",
+        "execution": "eth_call",
+        "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+        "chainId": 84532,
+        "revert": "NotSignedByAirnode",
+        "passed": true
+      },
+      {
+        "name": "wrong-key",
+        "expected": "NotSignedByAirnode",
+        "accepted": false,
+        "functionName": "automaticReserve",
+        "block": "52595937",
+        "execution": "eth_call",
+        "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+        "chainId": 84532,
+        "revert": "NotSignedByAirnode",
+        "passed": true
+      }
+    ],
+    "unchanged": true,
+    "passed": true
+  }
+}

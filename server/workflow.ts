@@ -1,3 +1,4 @@
+import { logPages } from '../src/log-pages.ts';
 import { decodeEventLog } from 'viem';
 import { chain, client } from '../src/v3/chain.ts';
 import type { WorkflowCase } from '../src/v3/ui-types.ts';
@@ -10,14 +11,13 @@ export async function workflowCases(
 ): Promise<WorkflowCase[]> {
   const c = await chain(),
     time = await now();
-  const [rs, es, tip, logs] = await Promise.all([
+  const tip = await client.getBlockNumber({ cacheTime: 0 });
+  const [rs, es, logs] = await Promise.all([
     reservations(),
     chainEvidence(),
-    client.getBlockNumber({ cacheTime: 0 }),
-    client.getLogs({
-      address: c.config.fund,
-      fromBlock: BigInt(c.config.deployedBlock),
-    }),
+    logPages(BigInt(c.config.deployedBlock), tip, (fromBlock, toBlock) =>
+      client.getLogs({ address: c.config.fund, fromBlock, toBlock }),
+    ),
   ]);
   const events = logs.flatMap((log) => {
     try {
@@ -147,8 +147,7 @@ export async function workflowCases(
           action = 'await_round';
           actor = 'operator_and_data_reviewers';
         }
-        const nextRound = Number(await c.read('lastRoundAt'));
-        const roundAt = nextRound ? nextRound + 21600 : 0;
+        const roundAt = Number(((await c.read('sharedQuote')) as unknown[])[1]);
         if (step === 3 && exists && a.automatic && roundAt > time)
           reasonCodes.push('round_wait');
         return {

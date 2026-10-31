@@ -17,11 +17,7 @@ import {
   type Participant,
 } from '../src/v3/domain.ts';
 import { allocate } from '../src/v3/allocation.ts';
-import {
-  estimate,
-  syntheticCases,
-  MODEL_VERSION,
-} from '../src/v3/model.ts';
+import { estimate, syntheticCases, MODEL_VERSION } from '../src/v3/model.ts';
 import {
   type State,
   type Role,
@@ -44,14 +40,10 @@ export function must(
   if (!condition) throw new Rejected(message, status);
 }
 export function requireRole(role: Role, ...kinds: Role['kind'][]) {
-  if (!kinds.includes(role.kind))
-    throw new Rejected('Forbidden role', 403);
+  if (!kinds.includes(role.kind)) throw new Rejected('Forbidden role', 403);
 }
 export function own(role: Role, ngo: string) {
-  if (
-    role.kind === 'ngo' &&
-    role.ngo?.toLowerCase() !== ngo.toLowerCase()
-  )
+  if (role.kind === 'ngo' && role.ngo?.toLowerCase() !== ngo.toLowerCase())
     throw new Rejected('Other organization', 403);
 }
 export async function now() {
@@ -62,9 +54,7 @@ export function assessment(a: App) {
     ngo: a.ngo as Address,
     incident: hash(a.incident),
     areaVersion: 1n,
-    modelVersion: hash(
-      a.automatic ? 'fixed-equal-package-policy-v1' : MODEL_VERSION,
-    ),
+    modelVersion: hash('fixed-equal-package-policy-v1'),
     sources: a.sources as Hex,
     maximum: BigInt(a.maximum),
     expires: BigInt(a.expires),
@@ -81,12 +71,7 @@ export function request(a: App) {
     newEvidence: !!a.change,
   };
 }
-export function model(
-  s: State,
-  incident: string,
-  time: number,
-  ngo?: string,
-) {
+export function model(s: State, incident: string, time: number, ngo?: string) {
   const i = s.incidents.find((x) => x.id === incident);
   must(i, 'Unknown incident');
   const people = ngo
@@ -150,8 +135,7 @@ export async function submit(
       input.change.length >= 20,
     'Repeat cooldown requires material evidence',
   );
-  const m = model(s, input.incident, time, role.ngo);
-  const maximum = m.demoMaximum ?? POLICY.cap.toString();
+  const maximum = POLICY.cap.toString();
   for (const x of [input.requested, input.capacity, input.external])
     must(/^\d{1,12}$/.test(x), 'Integer token subunits required');
   must(
@@ -182,7 +166,7 @@ export async function submit(
     maximum,
     deadlineDays: deadlineDays(incident.hazard, false),
     sources: commitment({
-      model: m,
+      policy: POLICY.version,
       incident,
       coverage: s.coverage,
       explanation: input.explanation,
@@ -205,11 +189,7 @@ export function noConflict(s: State, role: Role, id: string) {
     403,
   );
 }
-export async function approveApplication(
-  s: State,
-  role: Role,
-  id: string,
-) {
+export async function approveApplication(s: State, role: Role, id: string) {
   noConflict(s, role, id);
   requireRole(role, 'data');
   const a = s.apps.find((x) => x.id === id);
@@ -225,15 +205,10 @@ export async function approveApplication(
     const data = assessment(a),
       r = request(a);
     const ah = (await c.read('assessmentHash', [data])) as Hex;
-    const key = (await c.read('keyFor', [
-      data.ngo,
-      data.incident,
-    ])) as Hex;
+    const key = (await c.read('keyFor', [data.ngo, data.incident])) as Hex;
     const existing = (await c.read('openApplication', [key])) as bigint;
     if (existing > 0n) {
-      const current = (await c.read('applications', [
-        existing,
-      ])) as unknown[];
+      const current = (await c.read('applications', [existing])) as unknown[];
       must(current[1] === ah, 'Different application already on chain');
       a.chainId = Number(existing);
     } else {
@@ -254,92 +229,136 @@ export async function approveApplication(
   return a;
 }
 export async function allocationSnapshot(s: State, draft?: App) {
-  const c = await chain(),
-    block = await client.getBlock({ blockTag: 'latest' });
+  const c = await chain();
+  const block = await client.getBlock({ blockTag: 'latest' });
   const time = Number(block.timestamp),
     blockNumber = block.number;
-  const balance = await c.balance(blockNumber),
-    reserved = (await c.read('totalReserved', [], blockNumber)) as bigint;
+  const balance = await c.balance(blockNumber);
+  const reserved = (await c.read(
+    'effectiveReserved',
+    [],
+    blockNumber,
+  )) as bigint;
   const nonce = Number(await c.read('roundNonce', [], blockNumber));
+  const [amounts, nextRound, uncertain, competing] = (await c.read(
+    'sharedQuote',
+    [],
+    blockNumber,
+  )) as [bigint[], bigint, boolean, boolean];
   const states = s.areas.map((a) => ({
     area: a.id,
     situation: situation(a, s.coverage, time),
   }));
-  const uncertain = states.some(
-    (x) => x.situation === 'unknown' || x.situation === 'conflicting',
-  );
-  const competing = s.incidents.length > 1;
   const participants: Participant[] = [];
-  // All registered NGO operating packages, including competitors with no application.
-  for (const ngo of s.roles.filter((r) => r.kind === 'ngo'))
-    for (const incident of s.incidents) {
+  const rows = [];
+  for (const incident of s.incidents)
+    for (const ngo of s.roles.filter((r) => r.kind === 'ngo')) {
       const app =
-        (draft && draft.ngo === ngo.ngo && draft.incident === incident.id
+        draft && draft.ngo === ngo.ngo && draft.incident === incident.id
           ? draft
-          : undefined) ??
-        s.apps.find(
-          (a) =>
-            a.ngo === ngo.ngo &&
-            a.incident === incident.id &&
-            a.status === 'reviewed',
-        );
-      const max = BigInt(
-        app?.maximum ??
-          model(s, incident.id, time, ngo.ngo).demoMaximum ??
-          POLICY.cap,
-      );
+          : s.apps.find(
+              (a) =>
+                a.ngo === ngo.ngo &&
+                a.incident === incident.id &&
+                a.status === 'reviewed',
+            );
       const key = await c.read(
         'keyFor',
         [ngo.ngo, hash(incident.id)],
         blockNumber,
       );
-      const paid = (await c.read(
-        'paidFor',
-        [key],
-        blockNumber,
-      )) as bigint;
+      const paid = (await c.read('paidFor', [key], blockNumber)) as bigint;
       const committed = (await c.read(
         'reservedFor',
         [key],
         blockNumber,
       )) as bigint;
-      let authorized = true;
-      if (app?.chainId) {
-        const onchain = (await c.read(
-          'applications',
-          [BigInt(app.chainId)],
-          blockNumber,
-        )) as unknown[];
-        authorized = Boolean(onchain[10]);
-      }
-      participants.push({
+      const external = app
+        ? BigInt(app.external)
+        : ((await c.read('externalFor', [key], blockNumber)) as bigint);
+      const blocked = (await c.read(
+        'isBlocked',
+        [ngo.ngo],
+        blockNumber,
+      )) as boolean;
+      const onchain = app?.chainId
+        ? ((await c.read(
+            'applications',
+            [BigInt(app.chainId)],
+            blockNumber,
+          )) as unknown[])
+        : undefined;
+      const authorized = app === draft || !!onchain?.[10];
+      const p: Participant = {
         id: `${ngo.id}/${incident.id}`,
         ngo: ngo.ngo!,
         incident: incident.id,
-        weight:
-          max > paid + committed + BigInt(app?.external ?? 0)
-            ? max - paid - committed - BigInt(app?.external ?? 0)
-            : 0n,
-        maximum: max,
+        weight: 1n,
+        maximum: POLICY.cap,
         requested: app && authorized ? BigInt(app.requested) : null,
-        capacity: BigInt(app?.capacity ?? max),
+        capacity: BigInt(app?.capacity ?? POLICY.cap),
         paid,
         reserved: committed,
-        external: BigInt(app?.external ?? 0),
-        blocked: (await c.read(
-          'isBlocked',
-          [ngo.ngo],
+        external,
+        blocked,
+      };
+      let amount = amounts[participants.length]!;
+      if (app === draft && draft) {
+        const quote = (await client.readContract({
+          address: c.config.fund,
+          abi: c.fundAbi,
+          functionName: 'automaticQuote',
+          account: ngo.ngo as Address,
+          args: [
+            BigInt(s.incidents.indexOf(incident)),
+            BigInt(draft.requested),
+            BigInt(draft.capacity),
+            BigInt(draft.external),
+          ],
           blockNumber,
-        )) as boolean,
+        })) as [bigint, bigint, bigint];
+        amount = quote[0];
+      }
+      const gap = (POLICY.cap * 90n) / 100n - paid - committed - external;
+      participants.push(p);
+      rows.push({
+        id: p.id,
+        ngo: p.ngo,
+        incident: p.incident,
+        weight: '1',
+        limit: String(gap > 0n ? gap : 0n),
+        amount: String(amount),
+        provisional: !app || !authorized || !!app.automatic,
       });
     }
-  const result = allocate(
-    participants,
-    balance,
-    reserved,
+  const free = balance - reserved;
+  const hold = uncertain ? (free * 20n) / 100n : 0n;
+  const liveRound =
+    Number(await c.read('packageExpires', [], blockNumber)) >= time &&
+    BigInt(
+      String(
+        await c.read(
+          'roundHolds',
+          [await c.read('packageSnapshot', [], blockNumber)],
+          blockNumber,
+        ),
+      ),
+    ) > 0n;
+  const roundBudget = liveRound
+    ? rows.reduce((sum, r) => sum + BigInt(r.amount), 0n)
+    : free - hold;
+  const result = {
+    policy: POLICY.version,
+    balance: String(balance),
+    alreadyReserved: String(reserved),
     uncertain,
     competing,
-  );
+    hold: String(hold),
+    budget: String(roundBudget),
+    unallocated: '0',
+    rows,
+    snapshot: commitment({ balance, reserved, nonce, rows }),
+  };
   return {
     result,
     states,
@@ -350,6 +369,7 @@ export async function allocationSnapshot(s: State, draft?: App) {
     uncertain,
     competing,
     nonce,
+    nextRound: Number(nextRound),
   };
 }
 export async function prepareRound(s: State, role: Role) {
@@ -366,7 +386,12 @@ export async function prepareRound(s: State, role: Role) {
     nonce,
   } = await allocationSnapshot(s);
   const pending = s.rounds.find(
-    (r) => r.nonce === nonce && !r.tx && r.expires > time,
+    (r) =>
+      r.nonce === nonce &&
+      !r.tx &&
+      r.expires > time &&
+      (r.explanation as { result?: { snapshot?: string } })?.result
+        ?.snapshot === result.snapshot,
   );
   if (pending) return pending;
   const grants = result.rows
@@ -519,9 +544,7 @@ export async function proposeReview(
   let manifest = '0x' + '0'.repeat(64);
   let receivedAt = time;
   if (input.kind !== 'followup') {
-    const e = (await chainEvidence()).find(
-      (x) => x.id === input.evidenceId,
-    );
+    const e = (await chainEvidence()).find((x) => x.id === input.evidenceId);
     must(e, 'Evidence missing', 404);
     manifest = e.manifest;
     if (input.kind === 'receipt') {
@@ -542,10 +565,7 @@ export async function proposeReview(
       s.apps.some((a) => a.id === input.applicationId && a.chainId),
       'Application missing',
     );
-  must(
-    input.reason.length >= 20,
-    'Document checks and conflict declaration',
-  );
+  must(input.reason.length >= 20, 'Document checks and conflict declaration');
   const duplicate = s.reviews.find(
     (r) =>
       !r.tx &&

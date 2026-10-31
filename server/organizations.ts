@@ -1,4 +1,4 @@
-import { chain, client, account } from '../src/v3/chain.ts';
+import { chain, client, roleAddress } from '../src/v3/chain.ts';
 import type { State } from './state.ts';
 import type { Database } from './store.ts';
 import type { Activity, Organization, Snapshot } from '../src/v3/ui-types.ts';
@@ -98,7 +98,7 @@ export async function organizationData(db: Database<State>, id?: string) {
       };
       const [balance, reserved, paid] = (await Promise.all([
         c.balance(blockNumber),
-        c.read('totalReserved', [], blockNumber),
+        c.read('effectiveReserved', [], blockNumber),
         c.read('totalPaid', [], blockNumber),
       ])) as [bigint, bigint, bigint];
       funds = {
@@ -122,7 +122,7 @@ export async function organizationData(db: Database<State>, id?: string) {
         .map((r) => normalizeActivity(r, times.get(String(r.block_number))!));
     }
   }
-  const support = supportSummary(items, account(0).address);
+  const support = supportSummary(items, roleAddress(0));
   const accepted = snapshot.block
     ? (await chainEvidence(BigInt(snapshot.block)))
         .filter((e) => [2, 6].includes(e.status))
@@ -131,7 +131,7 @@ export async function organizationData(db: Database<State>, id?: string) {
   const organization: Organization = {
     ...s.alliance,
     description:
-      'Ein lokales, synthetisches Bündnis: drei NGOs teilen einen Fonds für grundlegende Katastrophenhilfe.',
+      'Simuliertes Bündnis: drei NGOs teilen einen gemeinsamen Fonds mit wertlosen Testmitteln.',
     members: s.roles
       .filter((r) => r.kind === 'ngo')
       .map((r) => ({ id: r.id, name: r.name, wallet: r.ngo! })),

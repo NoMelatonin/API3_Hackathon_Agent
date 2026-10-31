@@ -5,7 +5,7 @@ import { NGOFlow } from './workflow.tsx';
 import { ActivityList, FundMetrics } from './components.tsx';
 
 function ApplicationWizard({ onClose }: { onClose: () => void }) {
-  const { portal, organizations, tr, run, busy, money } = useUI();
+  const { portal, organizations, tr, run, busy, money, locale } = useUI();
   const [step, setStep] = useState(1),
     [incident, setIncident] = useState(portal!.incidents[0]?.id ?? ''),
     [requested, setRequested] = useState('500'),
@@ -133,7 +133,11 @@ function ApplicationWizard({ onClose }: { onClose: () => void }) {
         )}
         {step === 2 && (
           <>
-            <p>{tr('synthetic_model_a_preview_reserves_no_funds')}</p>
+            <p>
+              {locale === 'de'
+                ? 'Feste gemeinsame Förderregel; eine Vorschau reserviert kein Geld.'
+                : 'Fixed shared funding policy; a preview reserves no funds.'}
+            </p>
             {[
               [tr('requested_dusd'), requested, setRequested],
               [tr('capacity_dusd'), capacity, setCapacity],
@@ -163,9 +167,9 @@ function ApplicationWizard({ onClose }: { onClose: () => void }) {
             <dl className="summary">
               <div>
                 <dt>
-                  {preview.manual
-                    ? tr('manual_proposal_for_external_review')
-                    : tr('synthetic_model_ceiling')}
+                  {locale === 'de'
+                    ? 'Feste Förderobergrenze'
+                    : 'Fixed funding ceiling'}
                 </dt>
                 <dd>{money(preview.proposedMaximum)}</dd>
               </div>
@@ -355,7 +359,11 @@ function EvidenceCard({ e }: { e: Evidence }) {
       <EvidenceImport evidenceId={e.id} />
       <label>
         {tr('document_type')}
-        <select aria-label={tr('document_type')} value={category} onChange={(x) => setCategory(x.target.value)}>
+        <select
+          aria-label={tr('document_type')}
+          value={category}
+          onChange={(x) => setCategory(x.target.value)}
+        >
           <option value="expenditure-evidence">
             {tr('expenditure_evidence')}
           </option>

@@ -5,8 +5,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-/// @notice Local-only valueless prototype. Signatures attest reviewer decisions, not objective truth.
-/// @dev Fixed organizational registry v1; no upgrades, admin withdrawal or public-chain constructor.
+/// @notice Valueless testnet prototype. Signatures attest reviewer decisions, not objective truth.
+/// @dev Fixed organizational registry v1; no upgrades or admin withdrawal; only Anvil and Base Sepolia.
 contract DisasterFundV3 is ReentrancyGuard {
     using SafeERC20 for IERC20;
     IERC20 public immutable token;
@@ -142,9 +142,9 @@ contract DisasterFundV3 is ReentrancyGuard {
     event Released(uint256 indexed reservation, uint256 amount);
 
     constructor(IERC20 t, address[3] memory n, address[3] memory d, address[3] memory e, address[3] memory a) {
-        if (block.chainid != 31337 || address(t).code.length == 0) revert Invalid();
+        if ((block.chainid != 31337 && block.chainid != 84532) || address(t).code.length == 0) revert Invalid();
         token = t;
-        DOMAIN = keccak256(abi.encode(keccak256("DisasterDAO V3 local attestations v1"), block.chainid, address(this)));
+        DOMAIN = keccak256(abi.encode(keccak256("DisasterDAO integrated attestations v1"), block.chainid, address(this)));
         address[12] memory all;
         for (uint256 i; i < 3; i++) {
             all[i] = n[i];
@@ -178,7 +178,7 @@ contract DisasterFundV3 is ReentrancyGuard {
         return keccak256(abi.encode(a));
     }
 
-    function _quorum(bytes32 hash, bytes[] calldata sigs, uint8 group) private view {
+    function _quorum(bytes32 hash, bytes[] calldata sigs, uint8 group) internal view {
         uint8 mask;
         for (uint256 i; i < sigs.length; i++) {
             address signer = ECDSA.recover(hash, sigs[i]);
@@ -201,7 +201,7 @@ contract DisasterFundV3 is ReentrancyGuard {
         return keccak256(abi.encode(ngo, incident));
     }
 
-    function open(Assessment calldata a, Request calldata r, bytes[] calldata sigs) external returns (uint256 id) {
+    function open(Assessment calldata a, Request calldata r, bytes[] calldata sigs) public virtual returns (uint256 id) {
         bytes32 ah = assessmentHash(a);
         bytes32 key = keyFor(a.ngo, a.incident);
         if (
@@ -278,7 +278,7 @@ contract DisasterFundV3 is ReentrancyGuard {
         return keccak256(abi.encode(grants, r));
     }
 
-    function closeRound(Grant[] calldata grants, Round calldata r, bytes[] calldata sigs) external nonReentrant {
+    function closeRound(Grant[] calldata grants, Round calldata r, bytes[] calldata sigs) external virtual nonReentrant {
         if (
             r.snapshot == 0 || usedRoundSnapshot[r.snapshot] || r.nonce != roundNonce || r.validUntil < block.timestamp
                 || r.validUntil > block.timestamp + 1 hours || r.balance != token.balanceOf(address(this))
@@ -323,7 +323,7 @@ contract DisasterFundV3 is ReentrancyGuard {
         return g.amount;
     }
 
-    function releaseHold(bytes32 snapshot) external {
+    function releaseHold(bytes32 snapshot) external virtual {
         if (block.timestamp <= holdExpires[snapshot] || roundHolds[snapshot] == 0) revert Invalid();
         totalReserved -= roundHolds[snapshot];
         roundHolds[snapshot] = 0;

@@ -1,0 +1,41 @@
+{
+  "chainId": 84532,
+  "network": "Base Sepolia",
+  "profile": "testnet",
+  "oracleMode": "live",
+  "activatedAt": "1793440312",
+  "oracleVerifier": "0x8Df20BA332BD8eF588af73106Aad4Dd8CB934D79",
+  "allocator": "0x3809413B74E58Af6A2F5f24705391176CC476972",
+  "transactions": {
+    "token": "0x519247f1b647d2d101524262cdb0a1587b470cc8fc492c82e284dab627d709c1",
+    "fund": "0x38c5d233d8b2876421b9f3b4598a7ad840541ce899c18722ffbdcbf3a09d89c4",
+    "approve": "0x3b2f669ddc8bda4116f6e0b8188ad74ba5693e454c27b25548d2d5f1c91911cf",
+    "deposit": "0xdde1a7a640e3b8f9d3a7e50f4d3aa588948fccf9276549f658e22bb3a88cbb5f",
+    "activation": "0x6d449ae7c954b4990d4ab496786d8571fe92d0c9b9e59062b04b08f60ea32e1d"
+  },
+  "deployer": "0xb6350819F8504fe3c27Ed9E9C40d83B6c9f52C55",
+  "seedAmount": "18000000000",
+  "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+  "token": "0x2bea3622c9c76c473ea974588e85b0bdb1af3e64",
+  "deployedBlock": "52592206",
+  "ngos": [
+    "0x4cCd9E9853C963098B131978a699a1C03a1f5f89",
+    "0x6EB561D07534500D783143089B8942B968F1c18f",
+    "0x7c4290bB313e7c856E8930828f361915C12CE337"
+  ],
+  "dataReviewers": [
+    "0xD919797918cF626408b314DB3CA4018e4B1A01dA",
+    "0x2D3b8765F71A88464f32A009d75B74a72Ffc1e77",
+    "0x8e8D0DfDcE5F730D4852a4573A023A19CB326F2F"
+  ],
+  "evidenceReviewers": [
+    "0xB6F6e2515716993195Be6aDc5967ddb187F89f8f",
+    "0xD89C9756917a3F14c3df816d6Efe3d5430D74E34",
+    "0x37335bbea5eE3F3429bcE119734735e89bFac2f2"
+  ],
+  "appealReviewers": [
+    "0xbE5b1ebFF101eB994f9978F8bEF673E388350eb7",
+    "0xa32b318c06D55D633c01eE18a490EA7B7e147975",
+    "0x81fB46F8C5D802aa6AfeB8C8932EF49F03729741"
+  ]
+}

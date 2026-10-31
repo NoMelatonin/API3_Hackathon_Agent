@@ -1,3 +1,5 @@
+import type { SignedResponse } from '../../src/vendor/airnode-v2.ts';
+import { OriginalResponseInput } from './original-response.tsx';
 import React, { useEffect, useState } from 'react';
 import { api, amount, saveJSON, useUI } from './context.tsx';
 import type { AutomaticPreview, WorkflowCase } from '../../src/v3/ui-types.ts';
@@ -39,8 +41,8 @@ const messages: Record<string, [string, string]> = {
     'Source unavailable for this incident. Retry or choose external review.',
   ],
   observation_stale: [
-    'Das Ereignis ist älter als das zulässige 24-Stunden-Fenster.',
-    'The observation is older than the permitted 24-hour window.',
+    'Die Beobachtungszeit passt nicht zum registrierten Ereignisfenster; in der synthetischen Demo gilt höchstens ein Tag.',
+    'The observation time does not match the registered event window; the synthetic demo permits at most one day.',
   ],
   signature_stale: [
     'Die signierte Antwort ist veraltet oder liegt in der Zukunft. Aktuelle Daten abrufen.',
@@ -192,6 +194,7 @@ export function NGOFlow({ external }: { external: () => void }) {
       explanation: '',
     };
   });
+  const [proof, setProof] = useState<SignedResponse>();
   const [current, setCurrent] = useState(1),
     [quote, setQuote] = useState<AutomaticPreview>(),
     [cases, setCases] = useState<WorkflowCase[]>(),
@@ -215,12 +218,14 @@ export function NGOFlow({ external }: { external: () => void }) {
     };
   }, [portal]);
   const input = () => ({
+    proof,
     incident: draft.incident,
     requested: amount(draft.requested),
     capacity: amount(draft.capacity),
     external: amount(draft.external),
   });
   const update = (k: string, v: string) => {
+    if (k === 'incident') setProof(undefined);
     setDraft((d) => ({ ...d, [k]: v }));
     setQuote(undefined);
   };
@@ -244,8 +249,8 @@ export function NGOFlow({ external }: { external: () => void }) {
       </div>
       <p>
         {de
-          ? 'Jeder Fall zeigt den nächsten Schritt, die zuständige Rolle und den Geldstatus. Lokaler Prototyp mit wertlosen dUSD.'
-          : 'Each case shows the next step, responsible role and funding status. Local prototype with worthless dUSD.'}
+          ? 'Jeder Fall zeigt den nächsten Schritt, die zuständige Rolle und den Geldstatus. Testprototyp mit wertlosen dUSD.'
+          : 'Each case shows the next step, responsible role and funding status. Test prototype with worthless dUSD.'}
       </p>
       {creating && (
         <div className="workflow-case">
@@ -261,6 +266,7 @@ export function NGOFlow({ external }: { external: () => void }) {
                       'POST',
                       current === 1
                         ? {
+                            proof,
                             incident: draft.incident,
                             requested: '500000000',
                             capacity: '500000000',
@@ -278,6 +284,7 @@ export function NGOFlow({ external }: { external: () => void }) {
                       'POST',
                       current === 1
                         ? {
+                            proof,
                             incident: draft.incident,
                             requested: '500000000',
                             capacity: '500000000',
@@ -361,6 +368,12 @@ export function NGOFlow({ external }: { external: () => void }) {
                 )}
               </>
             )}
+            <OriginalResponseInput
+              onChange={(p) => {
+                setProof(p);
+                setQuote(undefined);
+              }}
+            />
             {quote && <Quote q={quote} funding={current !== 1} />}
             {current === 2 && quote && (
               <p>
@@ -476,6 +489,7 @@ export function NGOFlow({ external }: { external: () => void }) {
 function CaseCard({ c, onNew }: { c: WorkflowCase; onNew: () => void }) {
   const { portal, locale, run, busy, money, date } = useUI(),
     de = locale === 'de';
+  const [proof, setProof] = useState<SignedResponse>();
   const [q, setQ] = useState<AutomaticPreview>();
 
   const a = portal!.apps.find((a) => a.id === c.id)!;
@@ -625,12 +639,19 @@ function CaseCard({ c, onNew }: { c: WorkflowCase; onNew: () => void }) {
       )}
       {c.action === 'reserve' && (
         <>
+          <OriginalResponseInput
+            onChange={(p) => {
+              setProof(p);
+              setQ(undefined);
+            }}
+          />
           <button
             disabled={busy}
             onClick={() =>
               run(async () =>
                 setQ(
                   await api('/automatic/preview', 'POST', {
+                    proof,
                     incident: a.incident,
                     requested: a.requested,
                     capacity: a.capacity,
@@ -664,7 +685,10 @@ function CaseCard({ c, onNew }: { c: WorkflowCase; onNew: () => void }) {
                 }
                 onClick={() =>
                   run(() =>
-                    api('/automatic/reserve', 'POST', { application: c.id }),
+                    api('/automatic/reserve', 'POST', {
+                      application: c.id,
+                      proof,
+                    }),
                   )
                 }
               >

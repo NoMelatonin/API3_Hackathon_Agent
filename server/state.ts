@@ -1,9 +1,6 @@
-import {
-  type Area,
-  type Coverage,
-  type Hazard,
-} from '../src/v3/domain.ts';
-import { account, organizationId } from '../src/v3/chain.ts';
+import { oracleMode } from '../src/v3/profile.ts';
+import { type Area, type Coverage, type Hazard } from '../src/v3/domain.ts';
+import { roleAddress, organizationId } from '../src/v3/chain.ts';
 export interface Role {
   id: string;
   kind: 'ngo' | 'data' | 'evidence' | 'appeal';
@@ -16,7 +13,7 @@ export const roles: Role[] = [
     id: `ngo-${i + 1}`,
     kind: 'ngo' as const,
     index: i + 1,
-    ngo: account(i + 1).address,
+    ngo: roleAddress(i + 1),
     name: ['Relief North', 'Health Bridge', 'Shelter Collective'][i]!,
   })),
   ...(['data', 'evidence', 'appeal'] as const).flatMap((kind, k) =>
@@ -45,9 +42,10 @@ export interface Incident {
   areaId: string;
   people: [number, number];
   features: number[];
-  synthetic: true;
+  synthetic: boolean;
 }
 export interface App {
+  oracleProof?: import('../src/vendor/airnode-v2.ts').SignedResponse;
   automatic?: boolean;
   id: string;
   version: number;
@@ -69,12 +67,7 @@ export interface App {
   chainId?: number;
   tx?: string;
   status:
-    | 'submitted'
-    | 'reviewed'
-    | 'reserved'
-    | 'paid'
-    | 'expired'
-    | 'rejected';
+    'submitted' | 'reviewed' | 'reserved' | 'paid' | 'expired' | 'rejected';
 }
 export interface Doc {
   category?: 'expenditure-evidence' | 'external-review';
@@ -175,12 +168,10 @@ export function seed(): State {
       ? {
           id: 'community-' + r.id,
           index: r.index + 13,
-          ...(r.ngo ? { ngo: account(r.index + 13).address } : {}),
+          ...(r.ngo ? { ngo: roleAddress(r.index + 13) } : {}),
           name:
             r.kind === 'ngo'
-              ? ['Community Rescue', 'Mobile Care', 'Safe Haven'][
-                  r.index - 1
-                ]!
+              ? ['Community Rescue', 'Mobile Care', 'Safe Haven'][r.index - 1]!
               : r.name,
         }
       : {}),
@@ -207,9 +198,12 @@ export function seed(): State {
       {
         id: 'philippines',
         version: 1,
-        name: 'Synthetic Philippines area',
-        country: 'PH',
-        bbox: [120, 10, 125, 18],
+        name:
+          oracleMode === 'live'
+            ? 'Historical Pacific storm test area'
+            : 'Synthetic Philippines area',
+        country: oracleMode === 'live' ? 'ZZ' : 'PH',
+        bbox: oracleMode === 'live' ? [160, 26, 162, 29] : [120, 10, 125, 18],
         hazards: ['storm', 'flood', 'health'],
       },
       {
@@ -238,21 +232,27 @@ export function seed(): State {
     incidents: [
       {
         id: 'demo-quake',
-        name: 'Synthetic earthquake response',
+        name:
+          oracleMode === 'live'
+            ? 'Historical Türkiye earthquake · USGS us6000jllz'
+            : 'Synthetic earthquake response',
         hazard: 'earthquake',
         areaId: 'turkiye',
         people: [1000, 1800],
         features: [7.1, 150, 0.7, 0.7, 1],
-        synthetic: true,
+        synthetic: oracleMode !== 'live',
       },
       {
         id: 'demo-storm',
-        name: 'Synthetic storm response',
+        name:
+          oracleMode === 'live'
+            ? 'Historical Pacific storm 15W · EONET_22386'
+            : 'Synthetic storm response',
         hazard: 'storm',
         areaId: 'philippines',
         people: [1200, 2200],
         features: [100, 200, 0.6, 0.5, 1],
-        synthetic: true,
+        synthetic: oracleMode !== 'live',
       },
       {
         id: 'demo-flood',

@@ -1,153 +1,78 @@
-> Aktualisierung 31.10.2026: V3 startet zwei isolierte Demo-Bündnisse und führt durch fünf getrennte NGO-Schritte. Aktuelle Regeln und Grenzen: [LANDKARTE.md](LANDKARTE.md#datenbasierter-abruf-neu). Die nachstehenden externen Prüfabläufe bleiben als Alternative erhalten.
+# DisasterDAO starten und erhalten
 
-# DisasterDAO V3 — lokaler Gesamtprototyp
+Stand: 31.10.2026. Eine Anwendung, zwei ausdrücklich getrennte Netzwerkprofile. Frühere V3-Betriebsanweisungen stehen [in der Historie](../history/v3-LOCAL.md).
 
-Zum Verständnis von Funktionen, Rollen und Umsetzung: [V3-Landkarte](LANDKARTE.md).
+## Lokale Demo
 
-> Aktueller UI-Ablauf auf `disasterdao-shared-fund-ui-improvements`: [getrennte Oberflächen und externe Signaturfreigaben](UI.md). Das frühere Prüferportal und dessen Browser-Anmeldung sind entfernt. Die untenstehenden Prüferportal-Schritte dokumentieren den vorherigen Ablauf; Freigaben werden jetzt extern vorbereitet, signiert und durch NGOs importiert.
-
-V3 ergänzt V1/V2 auf `feat/disasterdao-shared-fund`. Es gibt keine Migration oder Änderung öffentlicher Verträge. Alle Organisationen, Prüfer, Einsatzpakete, Dokumente, Ergebnisse und Kostenbeispiele sind simuliert. Unterschiedliche lokale Schlüssel demonstrieren Zuständigkeiten; sie belegen keine institutionelle Unabhängigkeit.
-
-## Start
-
-Voraussetzungen: Node ≥22.18, Docker Desktop gestartet, freie Ports 5173, 3007, 5437, 9007 und 8547. Die Compose-Images sind per Digest festgelegt; geprüft auf macOS/Apple Silicon. Die erste Ausführung lädt die Images und benötigt Internet. Danach läuft die Standarddemo ohne externe Datenabrufe.
+Voraussetzungen: Node.js ≥22.18, npm, laufende Docker-Engine. Im Projekt:
 
 ```sh
-npm run install:local
-npm run v3:start
+npm start
 ```
 
-User öffnen: **http://127.0.0.1:5173/?v3=1#/home** (auch der neue Standard unter `/`). Start nur einmal ausführen; bereits laufende Vite-/Backend-Terminals zuvor beenden. Docker-Volumes und `.runtime/` bleiben beim Beenden erhalten. Weder bestehende lokale V1-/V2-Konfigurationen noch Original-Fixtures werden überschrieben.
+Der Start prüft/installiert gesperrte Abhängigkeiten, startet Infrastruktur, baut kanonische Contracts, erhält vorhandene passende Deployments und startet Backend und Vite. Die Registry-Pakete liegen außerhalb des synchronisierten Desktop-Ordners; `npm run install:local` kann sie separat reparieren. Alte Abhängigkeitsordner werden gesichert, nicht gelöscht.
 
-Einzelschritte, falls Dienste separat gestartet werden sollen:
+| Dienst               | Loopback-Port |
+| -------------------- | ------------- |
+| Webseite             | 5173          |
+| Backend              | 3008          |
+| PostgreSQL           | 5438          |
+| Privater S3-Speicher | 9008          |
+| Anvil                | 8548          |
+
+Compose-Projekt: `disasterdao-integrated`; eigene Volumes `postgres`, `documents`, `chain`. Frühere `disasterdao-v3`-Volumes/Ports werden nicht gelöscht. Erstes Bündnis startet mit 18.000 dUSD, zweites mit 9.000; beide Token besitzen getrennt jeweils 36.000 wertlose dUSD.
+
+URLs: `/` Öffentlichkeit, `/?ngo=1#/ngo` NGO, `/#/jury` Jury. Es gibt keine Versionsauswahl. Start/Stop mit `Ctrl-C` beendet Node-Prozesse; Docker-Volumes bleiben erhalten. Der lokale Demo-Taktgeber erzeugt alle zwei Sekunden Bestätigungsblöcke. Abschalten für kontrollierte Tests:
 
 ```sh
-npm run v3:infra
-npm run forge -- build
-npm run v3:deploy
-npm run v3:server
-# zweites Terminal:
-npm run dev
+V3_DEMO_CLOCK=0 npm start
 ```
 
-`v3:deploy` verweigert ein abweichendes bestehendes Deployment. Bei Wiederholung überprüft es Contract-Code (mit separat geprüften Immutables), Chain 31337 und alle Rollen. Die maßgebliche Konfiguration heißt `.runtime/v3.1-persistent.json`. Ein abweichender Fonds kann mit `V3_DEPLOYMENT=.runtime/eigener-name.json` für **sämtliche** V3-Kommandos gewählt werden. Frühere lokale V3-Entwicklungsversuche können daneben liegen und werden nicht migriert. Der Anvil-Container verwendet ein eigenes beschreibbares Named Volume und speichert seinen Zustand sekündlich.
+Der reguläre Worker erzeugt keine Blöcke. `npm run clock -- --seconds 1` funktioniert ausschließlich auf Chain 31337. Kein öffentliches Zeitreisen.
 
-V1 bleibt unter `/?legacy=1`, V2 unter `/?v2=1`, lokale V2 zusätzlich `&local=1`. Deren bisherige Skripte und historische Chain auf Port 8545 bleiben getrennt. V3 nutzt Port **8547** und verändert keine Originalsignatur oder deren Zeitstempel.
-
-Die Kopf-Navigation **Demo · NGO · User** verbindet V2-Demo, NGO-Einstieg und öffentliche V3-Startseite. Der Wechsel meldet eine NGO-Sitzung nicht ab. User zeigt zusätzlich die bestätigten Testeinzahlungen je Bündnis als Ringdiagramm; keine persönlichen Guthaben. Bei fehlendem/veraltetem Index warten und „Aktualisieren“ wählen; gemint ist noch nicht indexbestätigt.
-
-Aktueller NGO-Einstieg: **http://127.0.0.1:5173/?v3=1&ngo=1**. Dort NGO auswählen und anmelden; Abmelden und Rückkehr zur Öffentlichkeit ist eine eigene Aktion. Kein NGO-Login im öffentlichen Zahnrad.
-
-## Abhängigkeiten ohne Cloud-Blockade
-
-Der lokale Betreiber startet künftig mit `npm run v3:start`; eine erneute Installation vor jedem Start ist nicht nötig. Der Start prüft zuerst Manifest, Lockfile, npm-Konfiguration, Node-Hauptversion und Plattform. Nur bei Änderungen oder fehlendem Cache wird installiert. Es ist keine fachliche Freigabe nötig; NGOs und Prüferrollen bleiben unverändert.
-
-`npm run install:local` (ohne npm alternativ `node scripts/install-local.mjs`) installiert mit `npm ci` in einem neuen lokalen Cache-Verzeichnis und verlinkt danach `node_modules`. Unter macOS liegt der Cache in `~/Library/Caches/disasterdao-deps/`, auf anderen Systemen in `~/.cache/disasterdao-deps/`. `DISASTERDAO_DEPS_CACHE` darf einen anderen lokalen, nicht synchronisierten Pfad außerhalb des Projekts setzen. Fehlgeschlagene Installationen ersetzen keine funktionierenden Abhängigkeiten. Netzabrufe haben begrenzte Wiederholungen; nach fünf Minuten bricht das Werkzeug mit einer Fehlermeldung ab. Das ist keine Garantie gegen Betriebssystem- oder Netzwerkausfälle.
-
-**Hier kein direktes `npm ci` verwenden:** npm kann den Symlink entfernen und wieder Abhängigkeiten auf dem synchronisierten Desktop anlegen. Der nächste sichere Start repariert das. Für eine bewusst frische Installation: `npm run install:local -- --clean`, bei zuvor beendeten Entwicklungsservern. Der Installer verhindert parallele Aufrufe seines eigenen Installationswegs; direkte npm-Aufrufe werden nicht abgefangen.
-
-Alte Abhängigkeitsordner werden ausschließlich umbenannt und unter `.dependency-backups.noindex/` erhalten. Sie werden nicht rekursiv gelesen oder automatisch gelöscht. Das vermeidet das erneute Lesen blockierter Cloud-Platzhalter; alte Caches und Sicherungen können Speicher belegen. Vite beobachtet diese Sicherungen nicht, sperrt ihren HTTP-Zugriff und begrenzt den Einstieg seiner Abhängigkeitssuche auf `index.html`. Auch frühere `node_modules.stalled-*`-Sicherungen sind ausgeschlossen.
-
-Die Installation außerhalb des Projekts ist auf dessen aktuelle Registry-Abhängigkeiten ohne Root-Installationshooks ausgelegt. Bei späteren lokalen `file:`-/Workspace-Abhängigkeiten oder Installationshooks muss dieser Ablauf mit angepasst werden. Quellcode, `.runtime/` und Docker-Volumes bleiben an ihren bisherigen Orten; deren Cloud-Synchronisation wird dadurch nicht gelöst. Nächster Schritt nach erfolgreichem Start: die oben verlinkte Oberfläche öffnen.
-
-Umsetzung: [Installer](../../scripts/install-local.mjs), [Start](../../src/v3/start.ts), [Vite](../../vite.config.ts). Installer-Prüfungen: `node --test scripts/install-local.test.mjs`.
-
-## Vollständiger Durchlauf
-
-1. **Öffentlichkeit:** Gemeinsamen Fonds, Gebiete und Organisationen ansehen. Eine Testspende bis 1.000 dUSD verwendet das ausdrücklich simulierte lokale Spenderkonto. Anfangs liegen 18.000 dUSD im Fonds und weitere 18.000 beim Testspender. dUSD hat sechs Dezimalstellen und keinen Fiat-Wechselkurs.
-2. **NGO:** Rolle `Relief North` wählen und anmelden. Einen Betrag unter dem vorgeschlagenen Maximum beantragen (z. B. 500 dUSD), Kapazität, externe Finanzierung und Begründung prüfen. Die Bereiche der drei NGOs sind ausdrücklich **synthetische, getrennte Drittel**; die Bevölkerung wird entsprechend aufgeteilt. Das ist keine echte Erhebung oder räumliche Bedarfsanalyse.
-3. **Datenprüfung:** Rolle `data 1` anmelden und den Antrag bestätigen. Dann separat `data 2` anmelden und dieselbe Version bestätigen. Erst die zweite Freigabe öffnet den Antrag on-chain. „Befangenheit erklären“ entfernt eine noch offene Stimme; die dritte Person ersetzt einen ausgeschlossenen Prüfer. Abgeschlossene Entscheidungen werden dadurch nicht rückwirkend geändert.
-4. **Runde:** Als Datenprüfer „Förderrunde“ erstellen und mit zwei Datenprüfern bestätigen. Die Erklärung enthält alle registrierten Einsatzpakete, auch solche ohne Antrag. Deren vorläufige Anteile werden 24 Stunden mitreserviert. Unbekannte Abdeckung hält zusätzlich 20% freier Mittel zurück; konkurrierende Krisen oder Unklarheit begrenzen kumulative Bewilligungen auf 90% des aktuellen Maximums. Gewichte hängen nicht von der selbst gewählten Antragssumme ab. Ein Antrag über 500 dUSD kann deshalb weniger erhalten.
-5. **Auszahlung:** Wieder `Relief North` wählen und die Reservierung innerhalb von 24 Stunden abrufen. Auszahlung geht ausschließlich an die feste NGO-Adresse, unabhängig vom Relayer. „Aktualisieren“ liest Chain und Portal erneut.
-6. **Nachweis:** Eine ausschließlich fiktive Textdatei erstellen, deren erste Zeile `DISASTERDAO SYNTHETIC` lautet. Danach etwa erfundene Rechnung, Zahlungsabgleich, Lieferbestätigung und Stichproben dokumentieren. Upload beim betreffenden Auszahlungsdatensatz. PDF/PNG/JPEG werden nach Dateisignatur geprüft und ausschließlich als Download ausgeliefert. Maximal 2 MiB. Ein separater kurzer Zwischenbericht kann bis Tag 7 eingereicht werden.
-7. **Eingang:** Als `evidence 1` einen Eingangsprüfauftrag erstellen und bestätigen; als `evidence 2` denselben Auftrag bestätigen. Das gesalzene Manifest und die signierte Eingangszeit werden verankert. Dies bedeutet **noch keine akzeptierte Verwendung**.
-8. **Verwendungsprüfung:** Einen neuen Auftrag vom Typ „Prüfung“ mit Entscheidung „Akzeptieren“, „Nachfordern“ oder „Ablehnen“ und dokumentierten Prüfhandlungen erstellen. Zwei Nachweisprüfer bestätigen dieselbe Entscheidung. Nachforderungen geben 14 Kalendertage; eine endgültige Ablehnung sperrt weitere Auszahlungen. Prüfziel: zehn UTC-Werktage (Mo–Fr, ohne Feiertagskalender).
-9. **Bericht:** Nach akzeptierter Verwendung kann die NGO einen Bericht mit Herkunft, Nutzungsrechten und Schutzprüfung einreichen. Erst zwei Nachweisprüfer geben ihn für die lokale öffentliche Oberfläche frei. Auszahlungen, geprüfte Verwendung und behauptete Wirkung werden getrennt dargestellt; die Demo belegt keine reale Wirkung.
-10. **Folgeantrag:** Neue Bewertung und dokumentierte Änderung einreichen und erneut von zwei Datenprüfern freigeben lassen. Danach entweder beide unbefangenen anderen NGOs abstimmen lassen (bei drei Mitgliedern mindestens 2/2) oder — nach akzeptierten bisherigen Nachweisen — einen Nachweisprüfauftrag „Folgeantrag“ durch 2/3 freigeben. Der Antragsteller kann sich nicht selbst zustimmen. Aktueller Restanspruch, Fristen und Budget gelten weiter.
-
-Jede Runde dauert sechs Stunden. Für zeitabhängige lokale Tests kann ausschließlich die isolierte V3-Uhr weitergestellt werden:
+## Base Sepolia
 
 ```sh
-npm run v3:clock -- --seconds 21600
+DISASTERDAO_PROFILE=testnet npm start
 ```
 
-Danach aktualisieren und **erst dann** eine neue Runde erstellen. Unabgerufene Reservierungen sowie vorläufige Rundenanteile können nach 24 Stunden freigegeben werden. Ein nicht ausreichend genehmigter Folgeantrag kann nach 72 Stunden geschlossen werden. Unveränderte Wiederholungen unterliegen der siebentägigen Sperre; dokumentierte wesentliche Evidenz muss erneut geprüft werden.
+Der Start baut dieselbe Anwendung, verwendet die veröffentlichten `deployments/integrated-base-sepolia*.json`, prüft Netzwerk/Runtime/Rollen/Policies und deployt nichts. Er startet nur die benötigten lokalen Speicher; die öffentliche Chain wird nicht verändert. Ungeeignete oder fehlende Airnode-Daten werden nicht synthetisch ersetzt.
 
-Verlängerung: Nachweisprüfauftrag „Verlängern“, maximal einmal und höchstens 30 Tage vor Fälligkeit. Einspruch: NGO innerhalb von 14 Tagen nach Ablehnung; Klärung durch die **separate** Gruppe `appeal 1–3` (2/3). Überfälligkeit prüft der Contract bei jeder Auszahlung ohne Worker. Eine rechtzeitige Einreichung kann binnen einer Stunde mit signiertem Eingangsattest verankert werden; längere Chain-/Worker-Ausfälle benötigen eine ausdrückliche Klärung, keinen stillen Fristreset.
+Reine Jury-Simulationen verwenden öffentliche Rollenadressen und brauchen keine NGO-Schlüssel. Tatsächliche Transaktionen des lokalen Demo-Betreibers benötigen dessen `.runtime/testnet-roles.json`; diese Datei wird nicht veröffentlicht. Eine eigene Installation kann stattdessen einen neuen isolierten Testfonds mit eigenen Rollen deployen.
 
-## Daten und Modell
+Für ein **neues eigenes Testdeployment**:
 
-- [Datenregister](../../fixtures/v3/data-register.json) benennt die erhaltenen echten USGS-/EONET-Airnode-Fixtures. Sie belegen keine 30-Tage-Hilfskosten.
-- Die 18 Vergleichsfälle in `src/v3/model.ts` sind **vollständig synthetisch**. Aktuelle Ausgaben und geplante Anforderungen werden getrennt behandelt. Bis zu 20 nächste unabhängige Ereignisse; mindestens zehn, alle Pflichtmerkmale und geeignete Quellen nötig.
-- Gleiche Gewichte, robuste MAD-Standardisierung für Intensität, Dichte, Infrastruktur, Zugang, Preisniveau und logarithmierte erreichbare betroffene Bevölkerung. Median, gewichtetes 75%-Quantil, empirische Streuung, Bevölkerungsspanne, Ausschlüsse und Sensitivität werden erklärt. Die Spanne ist **kein kalibriertes Konfidenzintervall**.
-- Zeitliche Rücktests halten ganze Ereignisfamilien zurück. Regionenvergleiche sind Testmechanik auf fiktiven Gruppen, kein Nachweis realer Fairness.
-- 100.000 synthetische EUR (Preisstand 2026) entsprechen dem **Förderpolitik-Referenzfall** von 2.000 dUSD, begrenzt auf 4.500 je NGO/Ereignis. Das ist kein Wechselkurs und keine Kostendeckung. Bei fehlender Vergleichsgrundlage wird nur ein begründeter manueller Vorschlag zur 2/3-Prüfung angeboten; keine automatische empirische Freigabe.
-- Der optionale Worker `V3_LIVE_SOURCES=1 npm run v3:server` ruft USGS mit vollständiger Pagination und EONET als ergänzenden Katalog **ohne Airnode-Signatur** ab. Standard: offline/unbekannt. Katalogvollständigkeit bedeutet keine vollständige Gefahrenabdeckung; EONET beansprucht kein vollständiges Quellenprofil.
-- GDACS, WorldPop, EM-DAT, WHO und OCHA FTS haben ein Quellen-/Rechteregister, aber **keinen als funktionsfähig behaupteten V3-Live-/Airnode-Adapter**. WHO-Jahresinzidenz bleibt Kontext, kein akuter Trigger. Das reale globale Ausgabenkorpus und zusätzliche Nutzungsrechte bleiben unbewiesen.
-- Dokumentierte manuelle Lageentscheidungen können im lokalen Prüferportal nach 2/3-Prüfung die Unsicherheitsreserve freigeben. Sie sind auf Gebiet/Version/Zeit begrenzt, laufen nach einer Stunde aus und stehen im Rundensnapshot. Sie sind ebenfalls simulierte Prüferentscheidungen.
-
-## Architektur und Datenschutzgrenzen
-
-Fastify bindet nur an Loopback. PostgreSQL speichert einen transaktional gesperrten JSONB-Aggregatzustand sowie getrennte Audit- und Chain-Logtabellen. Dies ist ein bewusst begrenzter lokaler Prototyp mit einem Bündnis, drei NGOs und festem Register v1; keine dynamische Mitgliederverwaltung oder Produktionsskalierung. Ein Registrywechsel benötigt einen neuen isolierten Fonds.
-
-Die Rollenauswahl ist **simulierte Anmeldung**, keine reale Identitätsprüfung. Sitzungen sind zufällige HttpOnly-/SameSite-Cookies mit Ablauf, Schreibzugriffe benötigen den lokalen Request-Header und erlaubten Origin. NGO-Zugriffe sind serverseitig auf die eigene Organisation begrenzt. Datenprüfer können keine Originaldokumente herunterladen. Alle drei Nachweisprüfer sind im festen lokalen Register den synthetischen Nachweisen zugeordnet; Einsprüche haben eine getrennte Dreiergruppe.
-
-Dokumente werden vor S3-Speicherung mit AES-256-GCM verschlüsselt. Der S3-kompatible RustFS-Bucket ist privat; AWS-/S3-Schlüssel und entschlüsselte Dateien gelangen nicht ins Frontend. Die Anwendung vermittelt objekt-, nutzer- und methodengebundene Einmallinks (60 Sekunden) statt wiederverwendbarer direkter S3-URLs. Downloads werden protokolliert und als Anhang mit `nosniff`/Sandbox ausgegeben. Kein IPFS, keine personenbezogenen Originale, keine externe Dokumentenübersetzung.
-
-Die lokalen Verschlüsselungsschlüssel liegen mit Modus 0600 in `.runtime/`; Verlust macht gespeicherte Originale unlesbar. Compose nutzt öffentlich dokumentierte **Testzugangsdaten** an Loopback. Sessions und Links gehen bei Serverneustart verloren; Anträge und verschlüsselte Dokumente bleiben erhalten. Dies ist kein produktionsgeeignetes Authentifizierungs-, Schlüssel- oder Aufbewahrungssystem.
-
-Der Indexer rekonstruiert Ereignisse durch einen bestätigten Stand mit zwei Blöcken Abstand, ersetzt verwaiste Logs bei Reorgs und gleicht Antragszustände ab. Datenbank und Chain können nicht gemeinsam atomar committen; Abstimmung/Nonces, kanonische Wiedererkennung und erneute Zustellung begrenzen Doppelverarbeitung. Auszahlungen selbst sind atomar im Contract. Der Worker zeigt Ausfälle an und erzeugt lokale Fristerinnerungen; er versendet keine Nachrichten.
-
-Vor realem Betrieb fehlen fachliche Modellfreigabe, Rechteprüfung, Betreiber-/Rechtsraumwahl, echte NGO-/Prüfermandate, unabhängige Interessenkonfliktprüfung, Schlüsselverwaltung, Aufbewahrungs-/Löschkonzept, Datenschutz-Folgenabschätzung und regulatorische Prüfung. Der lokale Code stellt keine Rechtskonformität fest. Der Plan verweist hierfür unter anderem auf [EDPB-Leitlinien](https://www.edpb.europa.eu/system/files/2026-07/edpb_guidelines_202502_blockchain_v2_en.pdf) und [MiCA](https://eur-lex.europa.eu/legal-content/en/TXT/?uri=CELEX%3A32023R1114).
-
-## Sprache und Darstellung
-
-39 vollständige UI-Kataloge mit 69 Schlüsseln. DE/EN sind gepflegte Ausgangstexte; die übrigen 37 Übersetzungen sind sichtbar **ungeprüfte Entwürfe**. Keine fachliche Übersetzungsfreigabe behauptet. Technische Quellenmanifeste, fiktive Belegtexte und Begründungen werden ausdrücklich als englischer Originalquellentext angezeigt, nicht heimlich übersetzt.
-
-Sprache, eines von 51 Ländern, Zeitzone, Anzeigewährung und System/Hell/Dunkel sind unabhängig und lokal gespeichert. `Intl` formatiert Zahlen, Datum und reale historische Modellbeträge; Zeitangaben nennen die Zeitzone. Arabisch setzt RTL. Ohne datierten echten Referenzkurs bleibt eine andere Modellwährung unbekannt; der Code unterstützt datierte Raten, führt aber keinen Live-FX-Abruf durch. **dUSD wird nie in Fiat umgerechnet.**
-
-Länderliste: EU-27, die ersten zehn und letzten zwanzig Länder des WorldRiskIndex 2026, sechs EU-Überschneidungen, zusammen 51. Quelle: [WorldRiskReport](https://weltrisikobericht.de/worldriskreport/), vollständige Tabelle Druckseiten 62–63, CC BY 4.0; Andorra/San Marino teilen Rang 191. Nationales strukturelles Naturgefahrenrisiko ist kein aktueller Krisen- oder Gesundheits-/Konfliktstatus.
-
-## Prüfen
+1. `.env` aus `.env.example` vorbereiten: eigener Testwallet-Schlüssel `PAYER_PRIVATE_KEY`, optional separater `DEPLOYER_PRIVATE_KEY`, optional `RPC_URL`. Keine echten Gelder.
+2. Test-aUSD für API-Aufrufe und Base-Sepolia-Test-ETH für Gas beschaffen. API3-aUSD und Fonds-dUSD sind unterschiedliche Token.
+3. `npm run init:testnet` einmal ausführen. Existierende private Testrollen werden nicht überschrieben. Ohne `.env.roles` werden neue getrennte NGOs und Prüfer erzeugt; vorhandene historische NGO-/Committee-Testrollen können übernommen werden.
+4. `npm run install:local`, `npm run contracts:build`.
+5. Gebühren lesend prüfen: `DISASTERDAO_PROFILE=testnet npm run estimate-deploy`.
+6. Unter neuem Namen deployen:
 
 ```sh
-npm test
-npm run build
-npm run forge -- test
-npm run v3:verify
-npm run v3:integration
-npm run v3:test:ui
+DISASTERDAO_PROFILE=testnet V3_DEPLOYMENT=deployments/jury-new.json npm run deploy
+DISASTERDAO_PROFILE=testnet V3_DEPLOYMENT=deployments/jury-new.json npm run verify-deployment
+DISASTERDAO_PROFILE=testnet V3_DEPLOYMENT=deployments/jury-new.json npm start
 ```
 
-Integration und UI benötigen den laufenden Stack und ein unbenutztes finales V3-Deployment. Integration verwendet ein eigenes DB-Schema und Chain-Snapshots; UI speichert den Anwendungszustand und stellt ihn samt Chain nach jedem Test wieder her. Diese Prüfungen nicht gleichzeitig mit manuellen Transaktionen ausführen. Chrome bzw. ein installiertes Playwright-Chromium muss vorhanden sein.
+Der Name bestimmt auch das zweite Manifest `jury-new-community.json` und die getrennten Datenbankbereiche. Bestehende Deployments werden verifiziert/erhalten. Unpassende Runtime wird abgewiesen; niemals alte Manifeste blind löschen oder öffentliche Contracts als aktualisiert behandeln.
 
-Details zu ausgeführten Prüfungen und verbleibenden Grenzen: [Abnahme](VERIFICATION.md). Die Legacy-Transaktions-Browsertests benötigen weiterhin ihre eigenen frischen historischen V1/V2-Deployments; der V3-Start stellt diese bewusst nicht neu bereit.
+Vor Deployment wird eine doppelte Gebührenreserve verlangt. RPCs ohne funktionierende Gas-Zustandsüberschreibung werden über denselben Constructor mit bestehendem Testtoken konservativ geprüft; der Bericht benennt Probe und Puffer. Für neue Deployments gilt eine feste Gebührenobergrenze; bei steigender Base Fee wartet die Transaktion. Jeder gesendete Deploymenthash wird in einem privaten Fortschrittsjournal gespeichert. Nach einem Abbruch Journal und Receipts prüfen; ein unvollständiger gleichnamiger Versuch darf nicht blind wiederholt werden.
 
-## Zwei Bündnisse und Oracle-Abruf — 31.10.2026
+Der lokale Betreiber stellt bei Bedarf Testgas für registrierte NGO-Transaktionen bereit: konkrete Gasschätzung plus Puffer, höchstens 0,00004 Test-ETH Zielguthaben pro Vorgang. Prüfschlüssel und Testwallet gelangen nicht in den Browser. Der Mechanismus ist keine produktive Authentifizierung.
 
-`npm run v3:start` baut und startet beide lokalen Bündnisse. Neue Standardmanifeste: `.runtime/v3.3-ngo-flow.json` und die Variante `-community.json`. Alte Manifeste/Chain-Zustände/Dokumente bleiben erhalten; keine Übertragung alter Mittel oder Nachweise. Ein neuer Deploymentname erhält einen neuen getrennten Datenbestand. Die App nutzt für PostgreSQL ein aus dem Manifestnamen abgeleitetes Schema.
+## Kanonische Artefakte
 
-In der NGO-Anmeldung stehen sechs simulierte NGOs zur Auswahl. **Hilfe beantragen** führt durch Ereignisprüfung, Antrag, Freigabe/Reservierung, separaten Geldabruf und Verwendungsnachweis. Antrag und Reservierung überweisen nichts. Die Contract-Regel erlaubt Erstförderung sowie Folgeförderung bei aktueller Verschlechterung oder akzeptierten/geklärten Nachweisen ohne zusätzliche NGO-Zustimmung. Andernfalls stimmen die beiden anderen berechtigten NGOs zu; eine Stimme genügt nicht. Nachweissperren, sechs Stunden Rundenabstand und 24 Stunden Reservierungsfrist bleiben bestehen. Einzelheiten: [Landkarte](LANDKARTE.md#datenbasierter-abruf-neu).
+`npm run contracts:build` erzeugt bei fehlenden/geänderten Quellhashes einen vollständigen Contract-Build und eigene App-Artefakte unter `out/integrated`. Partielle Forge-/Test-Artefakte werden nicht als Deployment-Wahrheit übernommen. Die aktuellen Deployment-/Jury-/Verifikationsbefehle prüfen diesen Cache automatisch; kein manuelles ABI-Kopieren nötig.
 
-Standard ist die klar markierte lokale Demo mit Signer Konto 30. Für eine andere synthetische Lage kann der Betreiber den Backend-Prozess mit z. B. `V3_DEMO_SEVERITY='{"demo-quake":7.3,"demo-flood":3}'` starten. Ein höherer Wert ist nur eine Demo-Regel, kein echter Krisennachweis.
+## Daten, Schlüssel und Wiederherstellung
 
-`V3_ORACLE_MODE=live` muss beim Deployment und Serverstart übereinstimmen und benötigt einen eigenen neuen `V3_DEPLOYMENT`-Namen. USGS und EONET haben Adapter mit festem Signer und Request-Hash; ihre aktuell konfigurierten historischen Ereignisse sind älter als das zulässige Beobachtungsfenster und lösen deshalb keine aktuelle Auszahlung aus. Flut/akute Gesundheit sind im Live-Modus deaktiviert. Es wurde keine neue erfolgreiche echte Airnode-Zahlung nachgewiesen. Fehler oder unpassende Daten erzeugen keine Ersatzsignaturen; stattdessen den externen Prüfpfad verwenden.
+- `.env`, `.env.roles`, `.runtime/testnet-roles.json` und `.runtime/integrated-*-documents-*.key` privat sichern. Ohne Dateischlüssel sind verschlüsselte Originale unlesbar.
+- PostgreSQL-Bereiche binden Chain-ID, Manifestname und Bündnis. S3-Originale sind AES-256-GCM-verschlüsselt; Browserlinks sind einmalig und 60 Sekunden gültig.
+- Neustarts erhalten DB, Chain und Dateien; Browser-Sitzungen verfallen. Kein `docker compose down -v` als normale Reparatur.
+- Bei geänderter Contract-Runtime neues Manifest und damit neue isolierte App-Daten verwenden. Alte Deployment-/Auszahlungsnachweise bleiben historisch.
+- Ein geminter Vorgang kann vor zwei Folgeblöcken noch im Index fehlen. Worker läuft regelmäßig; die UI kennzeichnet ausstehende/veraltete Bestätigungen.
 
-Externe Betreiberbefehle für das zweite Bündnis mit `V3_ORGANIZATION=community-alliance` ausführen; Rollen heißen dort z. B. `community-data-1`. Standard ist `local-alliance`. Freigaben bleiben an Fonds und Chain gebunden. Testspenden haben eine Bündnisauswahl; das Diagramm zeigt bestätigte Einzahlungen desselben gemeinsamen Testspenderkontos.
+Alternative freie Web-/API-Ports: `DISASTERDAO_UI_PORT=5174 DISASTERDAO_API_PORT=3009 npm start`. Der Vite-Proxy und die erlaubten Loopback-Origins übernehmen dieselben Werte. Der RPC kann ausdrücklich mit `V3_RPC` gewählt werden; das tatsächliche Netzwerk muss zum Profil passen.
 
-Beim lokalen Deployment erzeugt das Startwerkzeug zwei zusätzliche Anvil-Blöcke, damit beide Initialeinzahlungen vor dem ersten Indexlauf bestätigt sind. Der Worker selbst erzeugt weiterhin keine Blöcke.
-
-## Geführte Demo und Live-Prüfung
-
-`npm run v3:demo` aktiviert ausdrücklich `V3_DEMO_CLOCK=1`. Nur der lokale Server erzeugt dann alle zwei Sekunden einen Anvil-Block und stößt den Indexer an. Der reguläre Worker verändert keine Chain-Zeit. Der Taktgeber bestätigt Transaktionen, überspringt aber keine Runden-/Nachweisfristen. Browser- und Integrationstests ohne Taktgeber ausführen, da sie Snapshots verwenden.
-
-Standard: `.runtime/v3.3-ngo-flow.json` und `.runtime/v3.3-ngo-flow-community.json`; alte Fonds und Dateien werden nicht migriert oder gelöscht. Einmalig mit dem aktuellen Build deployen; `v3:start` übernimmt dies. [Vorführschritte](UI.md#geführte-fünf-schritte-demo).
-
-Echte Quellen separat prüfen (keine Auszahlung und keine automatische Bezahlung):
-
-```sh
-V3_ORACLE_MODE=live V3_DEPLOYMENT=.runtime/v3.3-live-verification.json npm run v3:deploy
-npm run v3:check-live
-```
-
-Das erste Kommando erzeugt ausschließlich getrennte lokale Testfonds mit Live-Richtlinien. Das zweite prüft echte Antworten samt Signatur und Contract-Regel und speichert `.runtime/v3-live-check.json`. Am 31.10.2026 antworteten USGS und EONET mit HTTP 402 „Payment required“; damit konnte keine frische signierte Antwort geprüft werden. Flut/Gesundheit bleiben deaktiviert. Keine Ersatzsignaturen, keine Lockerung der Regeln und kein neuer V3-Live-Auszahlungsnachweis.
+[Demo und Freigaben](UI.md) · [Jury](../JURY.md) · [Funktionslandkarte](LANDKARTE.md)

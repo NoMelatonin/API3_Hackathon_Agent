@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 export const POLICY = Object.freeze({
-  version: 'v3.1',
+  version: 'shared-equal-v1',
   roundSeconds: 21600,
   reserveBps: 2000,
   restrictedBps: 9000,
@@ -99,18 +99,8 @@ export function commitment(value: unknown): string {
 export function overlaps(a: BBox, b: BBox) {
   return a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1];
 }
-export const deadlineDays = (hazard: Hazard, severe: boolean) =>
-  hazard === 'health'
-    ? severe
-      ? 60
-      : 45
-    : hazard === 'slow'
-      ? severe
-        ? 90
-        : 60
-      : severe
-        ? 45
-        : 30;
+export const deadlineDays = (hazard: Hazard, _severe = false) =>
+  hazard === 'health' ? 45 : hazard === 'slow' ? 60 : 30;
 export function situation(
   area: Area,
   snapshots: Coverage[],

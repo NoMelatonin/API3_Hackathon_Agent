@@ -1,12 +1,6 @@
 import type { UIKey } from './copy.ts';
 import React, { createContext, useContext } from 'react';
-import type {
-  App,
-  Doc,
-  Review,
-  Role,
-  Report,
-} from '../../server/state.ts';
+import type { App, Doc, Review, Role, Report } from '../../server/state.ts';
 import type { Organization } from '../../src/v3/ui-types.ts';
 import { formatDate, formatToken } from './i18n.ts';
 export interface Evidence {
@@ -24,6 +18,8 @@ export interface Evidence {
 }
 export interface Portal {
   role: Role;
+  network: string;
+  oracleMode: string;
   chainTime: number;
   blocked: boolean;
   apps: App[];
@@ -57,9 +53,7 @@ export async function api<T>(
     headers: {
       'x-v3-request': 'local-prototype',
       ...(organization ? { 'x-v3-organization': organization } : {}),
-      ...(body === undefined
-        ? {}
-        : { 'Content-Type': 'application/json' }),
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });

@@ -10,6 +10,7 @@ additional_compiler_profiles = [{ name = "via-ir", via_ir = true }]
 compilation_restrictions = [
   { paths = "contracts/DisasterFundV3Auto.sol", via_ir = true },
   { paths = "contracts/DemoUSDV3.sol", via_ir = true },
+  { paths = "contracts/SharedAllocation.sol", via_ir = true },
 ]
 evm_version = "cancun"
 remappings = [

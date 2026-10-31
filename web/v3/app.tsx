@@ -1,24 +1,14 @@
 import { uiText, type UIKey } from './copy.ts';
 import React, { useEffect, useRef, useState } from 'react';
 import { ViewNavigation } from '../view-navigation.tsx';
-import {
-  catalog,
-  languages,
-  countries,
-  translationStatus,
-} from './i18n.ts';
-import {
-  api,
-  amount,
-  formatters,
-  UIContext,
-  type Portal,
-} from './context.tsx';
+import { catalog, languages, countries, translationStatus } from './i18n.ts';
+import { api, amount, formatters, UIContext, type Portal } from './context.tsx';
 import type { Organization } from '../../src/v3/ui-types.ts';
 import { Dialog, ExternalIcon, GearIcon } from './components.tsx';
 import { HomePage } from './home.tsx';
 import { OrganizationPage } from './organization.tsx';
 import { NGOEntry } from './ngo-entry.tsx';
+import { JuryPage } from './jury.tsx';
 import { NGOPage } from './ngo.tsx';
 const stored = (key: string, fallback: string) => {
   try {
@@ -31,6 +21,7 @@ export function resolveRoute(hash: string) {
   const raw = hash.replace(/^#/, '');
   if (!raw || raw === 'public' || raw === '/home' || raw === 'review')
     return { kind: 'home', review: raw === 'review' };
+  if (raw === '/jury') return { kind: 'jury' };
   if (raw === 'ngo' || raw === '/ngo') return { kind: 'ngo' };
   if (raw === 'alliance-local-alliance')
     return { kind: 'organization', id: 'local-alliance' };
@@ -47,10 +38,9 @@ export function resolveRoute(hash: string) {
   return { kind: 'missing' };
 }
 export function SharedFundApp() {
-  const ngoEntry =
-    new URLSearchParams(location.search).get('ngo') === '1';
-  const publicHome = '/?v3=1#/home';
-  const ngoHome = '/?v3=1&ngo=1#/ngo';
+  const ngoEntry = new URLSearchParams(location.search).get('ngo') === '1';
+  const publicHome = '/#/home';
+  const ngoHome = '/?ngo=1#/ngo';
   const [sessionState, setSessionState] = useState<
     'checking' | 'authenticated' | 'anonymous' | 'error'
   >('checking');
@@ -129,9 +119,7 @@ export function SharedFundApp() {
         '/organizations/' + organization.id + '/test-support',
       );
       setPending((previous) =>
-        previous.filter(
-          (tx) => !confirmed.items.some((x) => x.tx === tx),
-        ),
+        previous.filter((tx) => !confirmed.items.some((x) => x.tx === tx)),
       );
     }
   }
@@ -207,7 +195,7 @@ export function SharedFundApp() {
       (route.kind === 'home' || route.kind === 'organization') &&
       location.hash
     )
-      location.replace('/?v3=1' + location.hash);
+      location.replace('/' + location.hash);
     if (ngoEntry && sessionState === 'authenticated' && !location.hash)
       location.replace(ngoHome);
   }, [ngoEntry, route.kind, sessionState]);
@@ -222,10 +210,7 @@ export function SharedFundApp() {
       ethereum?: {
         request: (p: { method: string }) => Promise<string[]>;
         on?: (event: string, fn: (a: string[]) => void) => void;
-        removeListener?: (
-          event: string,
-          fn: (a: string[]) => void,
-        ) => void;
+        removeListener?: (event: string, fn: (a: string[]) => void) => void;
       };
     }
   ).ethereum;
@@ -269,7 +254,7 @@ export function SharedFundApp() {
             </span>
           </a>
           <ViewNavigation
-            active={ngoEntry ? 'ngo' : 'user'}
+            active={route.kind === 'jury' ? 'jury' : ngoEntry ? 'ngo' : 'user'}
             label={tr('main_navigation')}
           />
           {ngoEntry && portal && (
@@ -277,7 +262,7 @@ export function SharedFundApp() {
               <span>{portal.role.name}</span>
               <button
                 disabled={busy}
-                onClick={() => run(() => logout('/?v3=1&ngo=1'))}
+                onClick={() => run(() => logout('/?ngo=1'))}
               >
                 {tr('sign_out')}
               </button>
@@ -295,9 +280,7 @@ export function SharedFundApp() {
                 className="primary"
                 disabled={!!portal}
                 onClick={() => setDonation(true)}
-                title={
-                  portal ? tr('end_the_ngo_session_first') : undefined
-                }
+                title={portal ? tr('end_the_ngo_session_first') : undefined}
               >
                 {tr('test_donation')}
               </button>
@@ -313,7 +296,11 @@ export function SharedFundApp() {
           </div>
         </header>
         <div className="simulation-strip">
-          {old('simulation')}
+          {organizations[0]?.snapshot.chainId === 84532
+            ? locale === 'de'
+              ? 'Base Sepolia · wertlose Testmittel · simulierte NGO-/Prüferrollen · echte Airnode-Antworten erforderlich'
+              : 'Base Sepolia · valueless test funds · simulated NGO/reviewer roles · genuine Airnode responses required'
+            : old('simulation')}
           {translationStatus(locale) === 'unreviewed-draft' && (
             <strong data-testid="draft">
               {' '}
@@ -346,7 +333,9 @@ export function SharedFundApp() {
               {tr('reviewers_now_work_outside_the_app_ngos')}
             </p>
           )}
-          {ngoEntry && route.kind !== 'missing' ? (
+          {route.kind === 'jury' ? (
+            <JuryPage />
+          ) : ngoEntry && route.kind !== 'missing' ? (
             sessionState === 'authenticated' && portal ? (
               <NGOPage key={portal.role.id} />
             ) : (
@@ -380,17 +369,14 @@ export function SharedFundApp() {
           )}
         </main>
         <footer>
-          <strong>DisasterDAO / V3</strong>
+          <strong>DisasterDAO</strong>
           <span>{tr('local_prototype_no_fiat_conversion_for_dusd')}</span>
-          <a href="/?legacy=1">
-            V1 Demo <ExternalIcon />
+          <a href="/#/jury">
+            Jury / API3 <ExternalIcon />
           </a>
         </footer>
         {settings && (
-          <Dialog
-            title={tr('settings')}
-            onClose={() => setSettings(false)}
-          >
+          <Dialog title={tr('settings')} onClose={() => setSettings(false)}>
             <div className="preferences-grid">
               {[
                 [
@@ -538,9 +524,7 @@ export function SharedFundApp() {
                 {locale === 'de' ? 'Bündnis' : 'Alliance'}
                 <select
                   value={donationOrganization}
-                  onChange={(e) =>
-                    setDonationOrganization(e.target.value)
-                  }
+                  onChange={(e) => setDonationOrganization(e.target.value)}
                 >
                   {organizations.map((o) => (
                     <option key={o.id} value={o.id}>

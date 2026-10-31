@@ -1,3 +1,6 @@
+import { juryConfig, jurySimulate, juryTamper } from './jury.ts';
+import { testnet, apiPort, uiPort } from '../src/v3/profile.ts';
+import type { SignedResponse } from '../src/vendor/airnode-v2.ts';
 import {
   automaticPreview,
   automaticSubmit,
@@ -60,7 +63,7 @@ export async function buildApp(
   const app = Fastify({
     logger: false,
     bodyLimit: 3 * 1024 * 1024,
-    requestTimeout: 20000,
+    requestTimeout: 90000,
   });
   const fixedOrganization = organizationId();
   app.addHook('onRequest', (_request, _reply, done) =>
@@ -100,7 +103,11 @@ export async function buildApp(
     const origin = req.headers.origin;
     if (origin)
       must(
-        /^http:\/\/(127\.0\.0\.1|localhost):(5173|4173|3007)$/.test(origin),
+        [uiPort, 4173, apiPort].some(
+          (port) =>
+            origin === `http://127.0.0.1:${port}` ||
+            origin === `http://localhost:${port}`,
+        ),
         'Origin denied',
         403,
       );
@@ -140,6 +147,58 @@ export async function buildApp(
     minLength: 1,
     maxLength,
   });
+  const proofSchema = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['airnode', 'requestHash', 'timestamp', 'data', 'signature'],
+    properties: {
+      airnode: { type: 'string', pattern: '^0x[0-9a-fA-F]{40}$' },
+      requestHash: { type: 'string', pattern: '^0x[0-9a-fA-F]{64}$' },
+      timestamp: { type: 'string', pattern: '^[0-9]{1,20}$' },
+      data: { type: 'string', maxLength: 100000 },
+      signature: { type: 'string', pattern: '^0x[0-9a-fA-F]{130}$' },
+    },
+  };
+  app.get('/api/v3/jury/config', juryConfig);
+  app.post<{ Body: { proof: SignedResponse; slot: number; ngo: number } }>(
+    '/api/v3/jury/simulate',
+    {
+      schema: schema({
+        proof: proofSchema,
+        slot: { type: 'integer', minimum: 0, maximum: 3 },
+        ngo: { type: 'integer', minimum: 0, maximum: 2 },
+      }),
+    },
+    async (req) => jurySimulate(req.body.proof, req.body.slot, req.body.ngo),
+  );
+  app.post<{
+    Body: {
+      proof: SignedResponse;
+      old: SignedResponse;
+      other: SignedResponse;
+      slot: number;
+      ngo: number;
+    };
+  }>(
+    '/api/v3/jury/tamper',
+    {
+      schema: schema({
+        proof: proofSchema,
+        old: proofSchema,
+        other: proofSchema,
+        slot: { type: 'integer', minimum: 0, maximum: 3 },
+        ngo: { type: 'integer', minimum: 0, maximum: 2 },
+      }),
+    },
+    async (req) =>
+      juryTamper(
+        req.body.proof,
+        req.body.old,
+        req.body.other,
+        req.body.slot,
+        req.body.ngo,
+      ),
+  );
   const int = { type: 'integer', minimum: 0, maximum: 1_000_000 };
 
   app.get('/api/v3/organizations', async () => ({
@@ -247,26 +306,41 @@ export async function buildApp(
   app.post<{ Body: AutomaticInput }>(
     '/api/v3/automatic/preview',
     {
-      schema: schema({
-        incident: str(60),
-        requested: str(12),
-        capacity: str(12),
-        external: str(12),
-      }),
+      schema: schema(
+        {
+          incident: str(60),
+          requested: str(12),
+          capacity: str(12),
+          external: str(12),
+          proof: proofSchema,
+        },
+        ['incident', 'requested', 'capacity', 'external'],
+      ),
     },
     async (req) => automaticPreview(auth(req), req.body),
   );
   app.post<{ Body: AutomaticSubmission }>(
     '/api/v3/automatic/submit',
     {
-      schema: schema({
-        incident: str(60),
-        requested: str(12),
-        capacity: str(12),
-        external: str(12),
-        explanation: str(2000),
-        requestId: str(64),
-      }),
+      schema: schema(
+        {
+          incident: str(60),
+          requested: str(12),
+          capacity: str(12),
+          external: str(12),
+          explanation: str(2000),
+          requestId: str(64),
+          proof: proofSchema,
+        },
+        [
+          'incident',
+          'requested',
+          'capacity',
+          'external',
+          'explanation',
+          'requestId',
+        ],
+      ),
     },
     async (req) =>
       db.transaction(async (s, audit) => {
@@ -276,15 +350,22 @@ export async function buildApp(
         return result;
       }),
   );
-  app.post<{ Body: { application: string } }>(
+  app.post<{ Body: { application: string; proof?: SignedResponse } }>(
     '/api/v3/automatic/reserve',
     {
-      schema: schema({ application: str(64) }),
+      schema: schema({ application: str(64), proof: proofSchema }, [
+        'application',
+      ]),
     },
     async (req) =>
       db.transaction(async (s, audit) => {
         const role = auth(req),
-          result = await automaticReserve(s, role, req.body.application);
+          result = await automaticReserve(
+            s,
+            role,
+            req.body.application,
+            req.body.proof,
+          );
         await audit(role.id, 'automatic-reserve', req.body.application);
         return result;
       }),
@@ -498,10 +579,9 @@ export async function buildApp(
       chainTime: time,
       incidents: s.incidents,
       areas: s.areas,
-      models: s.incidents.map((i) => ({
-        incident: i.id,
-        ...model(s, i.id, time, role.ngo),
-      })),
+      models: [],
+      network: c.config.network,
+      oracleMode: c.config.oracleMode,
       interim: s.interim.filter((x) => isOwn(x.ngo)),
       conflicts: role.kind === 'ngo' ? [] : s.conflicts,
       coverageDecisions: role.kind === 'data' ? s.coverageDecisions : [],
@@ -1174,7 +1254,10 @@ export async function buildApp(
     },
   );
   app.addHook('onSend', async (_req, reply, payload) => {
-    reply.header('X-V3-Simulation', 'local-roles-synthetic-data');
+    reply.header(
+      'X-DisasterDAO-Mode',
+      testnet ? 'testnet-airnode-simulated-roles' : 'local-synthetic',
+    );
     return payload;
   });
   return app;

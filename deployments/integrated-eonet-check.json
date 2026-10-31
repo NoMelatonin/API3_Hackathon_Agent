@@ -1,0 +1,13 @@
+{
+  "accepted": true,
+  "functionName": "automaticSubmit",
+  "block": "52596905",
+  "execution": "eth_call",
+  "fund": "0x31b632b6b01d486c5c7081423950f4a6edd58728",
+  "chainId": 84532,
+  "result": "2",
+  "kind": "genuine-airnode-contract-simulation",
+  "original": "fixtures/integrated/eonet-current.json",
+  "payoutAttempted": false,
+  "synthetic": false
+}

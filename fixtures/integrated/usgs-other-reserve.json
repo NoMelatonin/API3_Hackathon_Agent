@@ -1,0 +1,7 @@
+{
+  "airnode": "0x5aF744115e2577513D878D4263Db73b3E77E7630",
+  "requestHash": "0xdd61c57d1897ae1b2f3285f245e62cbf1724104520748fa09b699729c9043948",
+  "timestamp": "1793441003",
+  "data": "{\"depth\":10,\"eventId\":\"us6000jllz\",\"eventTime\":1675646254342,\"eventType\":\"earthquake\",\"latitude\":37.2256,\"longitude\":37.0143,\"magnitude\":7.8,\"status\":\"reviewed\"}",
+  "signature": "0x1a7fdf9f20b7a7565f4a31d190d14503c790fabaeebc40a29876e19328b5a89a62417f3c88b8a7d678d3e71bb07f11fe56ad9e0b8d594b308c2c825c6e668dc21b"
+}

@@ -1,4 +1,4 @@
-name: disasterdao-v3
+name: disasterdao-integrated
 services:
   postgres:
     image: postgres:17-alpine@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
@@ -6,10 +6,10 @@ services:
       POSTGRES_DB: disasterdao
       POSTGRES_USER: localdemo
       POSTGRES_PASSWORD: localdemo-only
-    ports: ["127.0.0.1:5437:5432"]
-    volumes: ["v3-postgres:/var/lib/postgresql/data"]
+    ports: ['127.0.0.1:5438:5432']
+    volumes: ['postgres:/var/lib/postgresql/data']
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U localdemo -d disasterdao"]
+      test: ['CMD-SHELL', 'pg_isready -U localdemo -d disasterdao']
       interval: 2s
       retries: 30
   s3:
@@ -17,16 +17,31 @@ services:
     environment:
       RUSTFS_ACCESS_KEY: localdemo
       RUSTFS_SECRET_KEY: localdemo-synthetic-only
-    ports: ["127.0.0.1:9007:9000"]
-    volumes: ["v3-documents:/data"]
+    ports: ['127.0.0.1:9008:9000']
+    volumes: ['documents:/data']
   chain:
-    user: "0:0" # dedicated named volume; Anvil must persist its generated local chain state
+    user: '0:0'
     image: ghcr.io/foundry-rs/foundry:stable@sha256:043752653d5be351c71709091b3db97c4421c907eb40ea294195e7f532aadf46
-    entrypoint: ["anvil"]
-    command: ["--host", "0.0.0.0", "--port", "8545", "--chain-id", "31337", "--accounts", "16", "--state", "/state/anvil.json", "--state-interval", "1", "--silent"]
-    ports: ["127.0.0.1:8547:8545"]
-    volumes: ["v3-chain:/state"]
+    entrypoint: ['anvil']
+    command:
+      [
+        '--host',
+        '0.0.0.0',
+        '--port',
+        '8545',
+        '--chain-id',
+        '31337',
+        '--accounts',
+        '32',
+        '--state',
+        '/state/anvil.json',
+        '--state-interval',
+        '1',
+        '--silent',
+      ]
+    ports: ['127.0.0.1:8548:8545']
+    volumes: ['chain:/state']
 volumes:
-  v3-postgres:
-  v3-documents:
-  v3-chain:
+  postgres:
+  documents:
+  chain:

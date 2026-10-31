@@ -11,11 +11,11 @@ import type { State } from '../server/state.ts';
 import { languages } from '../web/v3/i18n.ts';
 const chain = createPublicClient({
   chain: foundry,
-  transport: http('http://127.0.0.1:8547'),
+  transport: http('http://127.0.0.1:8548'),
 }).extend(testActions({ mode: 'anvil' }));
 const db = new pg.Pool({
   connectionString:
-    'postgres://localdemo:localdemo-only@127.0.0.1:5437/disasterdao',
+    'postgres://localdemo:localdemo-only@127.0.0.1:5438/disasterdao',
   options: `-c search_path=${databaseNamespace()}`,
 });
 let snap: `0x${string}`, saved: unknown;
@@ -74,7 +74,7 @@ test.afterEach(async () => {
 });
 test.afterAll(async () => db.end());
 
-test('four separate entries, compatible links, history and shared test deposit allocation', async ({
+test('one product, compatible old links, history and shared test deposit allocation', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -132,9 +132,25 @@ test('four separate entries, compatible links, history and shared test deposit a
     page.getByRole('heading', { name: 'Organisation nicht gefunden' }),
   ).toBeVisible();
   await page.goto('/?v2=1');
-  await expect(page.locator('.campaigns')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Gemeinsam Hilfe möglich machen.' }),
+  ).toBeVisible();
+  await expect(page.locator('.campaigns')).toHaveCount(0);
   await page.goto('/?legacy=1');
-  await expect(page.locator('.tabs')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Gemeinsam Hilfe möglich machen.' }),
+  ).toBeVisible();
+  await expect(page.locator('.tabs')).toHaveCount(0);
+  await page
+    .getByRole('navigation')
+    .getByRole('link', { name: 'Jury', exact: true })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Jury / API3', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Synthetische lokale Demo; kein echter Airnode-Nachweis.'),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -506,4 +522,45 @@ test('second alliance and source-based preview are visible in the NGO workspace'
       fullPage: true,
     });
   }
+});
+
+test('jury original-file import executes contract simulation and exposes exact signature rejection', async ({
+  page,
+}) => {
+  const { oracleResponse } = await import('../src/v3/oracle.ts');
+  const original = await oracleResponse('demo-quake');
+  await page.goto('/#/jury');
+  await page.getByLabel('proof', { exact: true }).setInputFiles({
+    name: 'synthetic-local-proof.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(original)),
+  });
+  await page
+    .getByRole('button', { name: 'Direkt im Contract simulieren', exact: true })
+    .click();
+  await expect(page.locator('pre[role=status]')).toContainText(
+    '"accepted": true',
+  );
+  await expect(page.locator('pre[role=status]')).toContainText(
+    '"execution": "eth_call"',
+  );
+  await page.getByLabel('proof', { exact: true }).setInputFiles({
+    name: 'edited.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({
+        ...original,
+        data: original.data.replace('"severity":7.1', '"severity":9.1'),
+      }),
+    ),
+  });
+  await page
+    .getByRole('button', { name: 'Direkt im Contract simulieren', exact: true })
+    .click();
+  await expect(page.locator('pre[role=status]')).toContainText(
+    '"accepted": false',
+  );
+  await expect(page.locator('pre[role=status]')).toContainText(
+    'NotSignedByAirnode',
+  );
 });

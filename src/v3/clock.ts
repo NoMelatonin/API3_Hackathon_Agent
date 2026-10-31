@@ -1,5 +1,7 @@
 import { client, chain } from './chain.ts';
 import { testActions } from 'viem';
+if ((await client.getChainId()) !== 31337)
+  throw new Error('Clock only permits local chain 31337');
 await chain();
 const arg = process.argv.indexOf('--seconds');
 const seconds = Number(process.argv[arg + 1]);

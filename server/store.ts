@@ -15,15 +15,13 @@ import {
 } from '@aws-sdk/client-s3';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 export const json = (value: unknown) =>
-  JSON.stringify(value, (_, v) =>
-    typeof v === 'bigint' ? v.toString() : v,
-  );
+  JSON.stringify(value, (_, v) => (typeof v === 'bigint' ? v.toString() : v));
 export class Database<T> {
   pool: pg.Pool;
   namespace: string;
   constructor(
     url = process.env.V3_DATABASE_URL ??
-      'postgres://localdemo:localdemo-only@127.0.0.1:5437/disasterdao',
+      'postgres://localdemo:localdemo-only@127.0.0.1:5438/disasterdao',
     namespace = databaseNamespace(),
   ) {
     this.namespace = namespace;
@@ -39,9 +37,7 @@ export class Database<T> {
     });
   }
   async init(seed: T) {
-    await this.pool.query(
-      `CREATE SCHEMA IF NOT EXISTS ${this.namespace}`,
-    );
+    await this.pool.query(`CREATE SCHEMA IF NOT EXISTS ${this.namespace}`);
     await this.pool.query(
       `CREATE TABLE IF NOT EXISTS v3_state(id integer PRIMARY KEY CHECK(id=1), body jsonb NOT NULL); CREATE TABLE IF NOT EXISTS v3_audit(id bigserial PRIMARY KEY, at timestamptz NOT NULL DEFAULT now(), actor text NOT NULL, action text NOT NULL, target text NOT NULL); CREATE TABLE IF NOT EXISTS v3_chain_checkpoint(id integer PRIMARY KEY CHECK(id=1), block_number bigint NOT NULL, block_hash text NOT NULL); CREATE TABLE IF NOT EXISTS v3_chain_log(block_number bigint NOT NULL, block_hash text NOT NULL, tx text NOT NULL, log_index integer NOT NULL, body jsonb NOT NULL, PRIMARY KEY(tx,log_index));`,
     );
@@ -57,11 +53,7 @@ export class Database<T> {
   async transaction<R>(
     fn: (
       state: T,
-      audit: (
-        actor: string,
-        action: string,
-        target: string,
-      ) => Promise<void>,
+      audit: (actor: string, action: string, target: string) => Promise<void>,
     ) => Promise<R> | R,
   ): Promise<R> {
     const c = await this.pool.connect();
@@ -77,9 +69,7 @@ export class Database<T> {
           [actor, action, target],
         );
       });
-      await c.query('UPDATE v3_state SET body=$1 WHERE id=1', [
-        json(state),
-      ]);
+      await c.query('UPDATE v3_state SET body=$1 WHERE id=1', [json(state)]);
       await c.query('COMMIT');
       return result;
     } catch (e) {
@@ -125,13 +115,12 @@ export class Documents {
     this.key = key;
     if (
       !['127.0.0.1', 'localhost'].includes(
-        new URL(process.env.V3_S3_ENDPOINT ?? 'http://127.0.0.1:9007')
-          .hostname,
+        new URL(process.env.V3_S3_ENDPOINT ?? 'http://127.0.0.1:9008').hostname,
       )
     )
       throw new Error('Local documents only');
     this.client = new S3Client({
-      endpoint: process.env.V3_S3_ENDPOINT ?? 'http://127.0.0.1:9007',
+      endpoint: process.env.V3_S3_ENDPOINT ?? 'http://127.0.0.1:9008',
       region: 'us-east-1',
       forcePathStyle: true,
       credentials: {
@@ -142,18 +131,14 @@ export class Documents {
   }
   async init() {
     try {
-      await this.client.send(
-        new HeadBucketCommand({ Bucket: this.bucket }),
-      );
+      await this.client.send(new HeadBucketCommand({ Bucket: this.bucket }));
     } catch (e) {
       if (
         (e as { $metadata?: { httpStatusCode: number } }).$metadata
           ?.httpStatusCode !== 404
       )
         throw e;
-      await this.client.send(
-        new CreateBucketCommand({ Bucket: this.bucket }),
-      );
+      await this.client.send(new CreateBucketCommand({ Bucket: this.bucket }));
     }
   }
   async put(id: string, plain: Buffer) {

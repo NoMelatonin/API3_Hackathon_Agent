@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import type { SignedResponse } from '../src/vendor/airnode-v2.ts';
 import { chain, client, hash } from '../src/v3/chain.ts';
 import {
   incidentIds,
@@ -16,6 +16,7 @@ import {
   type Address,
 } from 'viem';
 export type AutomaticInput = {
+  proof?: SignedResponse;
   incident: string;
   requested: string;
   capacity: string;
@@ -60,7 +61,7 @@ export async function automaticPreview(role: Role, input: AutomaticInput) {
   let signedAt: number | null = null;
   const synthetic = oraclePolicies()[slot]!.synthetic;
   try {
-    const response = await oracleResponse(input.incident);
+    const response = input.proof ?? (await oracleResponse(input.incident));
     signedAt = Number(response.timestamp);
     source = JSON.parse(response.data);
     const result = (await client.readContract({
@@ -103,6 +104,7 @@ export async function automaticPreview(role: Role, input: AutomaticInput) {
   }
   const balance = BigInt(String(await c.read('effectiveReserved')));
   const total = await c.balance();
+  const uncertain = Boolean(((await c.read('sharedQuote')) as unknown[])[2]);
   return {
     remaining: String(
       4050_000000n >
@@ -116,7 +118,9 @@ export async function automaticPreview(role: Role, input: AutomaticInput) {
         : 0n,
     ),
     fundFree: String(total - balance),
-    uncertaintyReserve: String(((total - balance) * 20n) / 100n),
+    uncertaintyReserve: String(
+      uncertain ? ((total - balance) * 20n) / 100n : 0n,
+    ),
     amount: String(amount),
     provisional: String(provisional),
     nextRound: Number(nextRound),
@@ -196,7 +200,7 @@ export async function automaticSubmit(
   );
   must(!preview.blocked, 'NGO blocked by evidence obligations');
   const c = await chain();
-  const proof = await oracleResponse(input.incident);
+  const proof = input.proof ?? (await oracleResponse(input.incident));
   const tx = await c.send(
     'automaticSubmit',
     [request(input, proof), hash(input.explanation), hash(input.requestId)],
@@ -222,13 +226,19 @@ export async function automaticSubmit(
     chainId: id,
     status: 'reviewed',
     automatic: true,
+    oracleProof: proof,
     tx,
   };
   if (previous) Object.assign(previous, record);
   else s.apps.push(record);
   return { application: input.requestId, tx };
 }
-export async function automaticReserve(s: State, role: Role, id: string) {
+export async function automaticReserve(
+  s: State,
+  role: Role,
+  id: string,
+  supplied?: SignedResponse,
+) {
   requireRole(role, 'ngo');
   const app = s.apps.find((a) => a.id === id && a.automatic);
   must(app && app.ngo === role.ngo && app.chainId, 'Application missing', 404);
@@ -243,7 +253,8 @@ export async function automaticReserve(s: State, role: Role, id: string) {
     await c.read('automaticReservation', [BigInt(app.chainId)]),
   );
   if (existing) return { reservation: existing };
-  const preview = await automaticPreview(role, app);
+  const proof = supplied ?? (await oracleResponse(app.incident));
+  const preview = await automaticPreview(role, { ...app, proof });
   must(
     preview.available,
     'No suitable current signed source; use external review',
@@ -256,7 +267,7 @@ export async function automaticReserve(s: State, role: Role, id: string) {
   );
   const tx = await c.send(
     'automaticReserve',
-    [BigInt(app.chainId), request(app, await oracleResponse(app.incident))],
+    [BigInt(app.chainId), request(app, proof)],
     role.index,
   );
   app.status = 'reserved';

@@ -1,0 +1,42 @@
+{
+  "checkedAt": "2026-10-31T10:36:19.049Z",
+  "eligibilityNotClaimedForExpiredResponses": true,
+  "results": [
+    {
+      "file": "eonet-current.json",
+      "signedAt": "1793441179",
+      "dataSha256": "602b6905a03379b46106c930667c71f52a30ea5b92b32c9ab00b006f4e04d5b1",
+      "genuineSignatureVerified": true
+    },
+    {
+      "file": "usgs-old.json",
+      "signedAt": "1793440389",
+      "dataSha256": "5bb04713986e933b44130047561e356d6cea379a1d70d73b0501ad5c892520e4",
+      "genuineSignatureVerified": true
+    },
+    {
+      "file": "usgs-other-reserve.json",
+      "signedAt": "1793441003",
+      "dataSha256": "c6718a5167edc7a5acad27349faabb7b0eb1a0dbc71db39e4e0f780acc004096",
+      "genuineSignatureVerified": true
+    },
+    {
+      "file": "usgs-other.json",
+      "signedAt": "1793440790",
+      "dataSha256": "c6718a5167edc7a5acad27349faabb7b0eb1a0dbc71db39e4e0f780acc004096",
+      "genuineSignatureVerified": true
+    },
+    {
+      "file": "usgs-reserve.json",
+      "signedAt": "1793440982",
+      "dataSha256": "5bb04713986e933b44130047561e356d6cea379a1d70d73b0501ad5c892520e4",
+      "genuineSignatureVerified": true
+    },
+    {
+      "file": "usgs-valid.json",
+      "signedAt": "1793440754",
+      "dataSha256": "5bb04713986e933b44130047561e356d6cea379a1d70d73b0501ad5c892520e4",
+      "genuineSignatureVerified": true
+    }
+  ]
+}

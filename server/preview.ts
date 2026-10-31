@@ -22,8 +22,11 @@ export async function previewApplication(
   for (const x of [input.requested, input.capacity, input.external])
     must(/^\d{1,12}$/.test(x), 'Integer token subunits required');
   const time = await now(),
-    m = model(s, input.incident, time, role.ngo);
-  const maximum = m.demoMaximum ?? String(POLICY.cap);
+    maximum = String(POLICY.cap);
+  must(
+    s.incidents.some((i) => i.id === input.incident),
+    'Unknown incident',
+  );
   must(
     BigInt(input.requested) > 0n &&
       BigInt(input.requested) <= BigInt(maximum) &&
@@ -51,7 +54,7 @@ export async function previewApplication(
   const gap = restricted - p.paid - p.reserved - p.external;
   return {
     proposedMaximum: maximum,
-    manual: m.demoMaximum === null,
+    manual: true,
     remaining: String(gap > 0n ? gap : 0n),
     estimated: row.amount,
     paid: String(p.paid),

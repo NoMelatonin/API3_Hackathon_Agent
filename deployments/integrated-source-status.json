@@ -1,0 +1,8 @@
+{
+  "checkedAt": "2026-10-31T09:54:21.979Z",
+  "source": "WHO GHO",
+  "airnodeStatus": 502,
+  "body": "{\"error\":\"Upstream responded with 500 \",\"upstreamStatus\":500}",
+  "integrated": false,
+  "reason": "No enabled WHO policy; annual Nigeria malaria indicator is not the registered acute health incident."
+}
